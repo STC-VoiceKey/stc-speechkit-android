@@ -1,0 +1,13 @@
+ru.speechpro.stcspeechkit
+ru.speechpro.stcspeechkit.common
+ru.speechpro.stcspeechkit.data.network
+ru.speechpro.stcspeechkit.diarization
+ru.speechpro.stcspeechkit.domain.models
+ru.speechpro.stcspeechkit.domain.service
+ru.speechpro.stcspeechkit.interfaces
+ru.speechpro.stcspeechkit.media
+ru.speechpro.stcspeechkit.recognize
+ru.speechpro.stcspeechkit.recognize.listeners
+ru.speechpro.stcspeechkit.synthesize
+ru.speechpro.stcspeechkit.synthesize.listeners
+ru.speechpro.stcspeechkit.util

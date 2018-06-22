@@ -1,0 +1,80 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'org.jetbrains.dokka-android'
+
+android {
+    compileSdkVersion 27
+
+    defaultConfig {
+        minSdkVersion 16
+        targetSdkVersion 27
+        versionCode 1
+        versionName "0.9.1"
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+    }
+
+    buildTypes {
+        debug {
+//            applicationIdSuffix '.debug'
+//            versionNameSuffix '-DEBUG'
+//            buildConfigField "Boolean", "LOG", 'true'
+        }
+        release {
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+//            buildConfigField "Boolean", "LOG", 'false'
+//            signingConfig signingConfigs.release
+        }
+    }
+
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
+    implementation 'com.android.support:appcompat-v7:27.1.1'
+    //retrofit
+    implementation "com.squareup.retrofit2:retrofit:$retrofit_version"
+    implementation "com.squareup.retrofit2:converter-jackson:$retrofit_version"
+    implementation "com.squareup.retrofit2:adapter-rxjava2:$retrofit_version"
+    implementation "com.jakewharton.retrofit:retrofit2-kotlin-coroutines-experimental-adapter:$coroutines_adapter_version"
+    //jackson
+    implementation "com.squareup.retrofit2:converter-jackson:$jackson_version"
+    testImplementation "junit:junit:$junit_version"
+    androidTestImplementation "com.android.support.test:runner:$runner_version"
+    androidTestImplementation "com.android.support.test.espresso:espresso-core:$espresso_version"
+    //websocket
+    implementation 'com.neovisionaries:nv-websocket-client:2.4'
+}
+repositories {
+    mavenCentral()
+}
+
+task dokkaJavadoc(overwrite: true, type: org.jetbrains.dokka.gradle.DokkaAndroidTask) {
+    outputFormat = "javadoc"
+    outputDirectory = "$buildDir/dokkaJavadoc"
+    // Do not create index pages for empty packages
+    skipEmptyPackages = true
+    //Do not output deprecated members. Applies globally, can be overridden by packageOptions
+    skipDeprecated = false
+    //No default documentation link to kotlin-stdlib
+    noStdlibLink = false
+}
+
+apply from: 'uploadArchives.gradle'
+
+kotlin {
+    experimental {
+        coroutines "enable"
+    }
+}
+
+
+
+
+
+

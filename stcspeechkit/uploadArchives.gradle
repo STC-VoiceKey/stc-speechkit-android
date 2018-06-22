@@ -1,0 +1,14 @@
+apply plugin: 'maven'
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: "file:/home/alexander/.m2/repository")
+            pom {
+                artifactId = "stcspeechkit"
+                version = "0.9.1"
+                groupId = "ru.speechpro.android"
+            }
+        }
+    }
+}

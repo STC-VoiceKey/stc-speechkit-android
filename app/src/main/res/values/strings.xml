@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">STC Speech Kit</string>
+    <string name="title_asr">ASR</string>
+    <string name="title_tts">TTS</string>
+    <string name="title_diarization">Diarization</string>
+
+    <string name="hello_blank_fragment">Hello blank diarization fragment</string>
+    <string name="websocket">WebSocket</string>
+    <string name="rest_api">Rest API</string>
+    <string name="start">start</string>
+    <string name="stop">stop</string>
+
+    <string name="ok">Ok</string>
+    <string name="cancel">Cancel</string>
+    <string name="go_to_settings">Go to settings to allow necessary permissions</string>
+    <string name="give_necessary_permissions">To continue, give the necessary permissions</string>
+    <string name="password">Password</string>
+    <string name="domain_id">Domain ID</string>
+    <string name="login">Login</string>
+
+</resources>
