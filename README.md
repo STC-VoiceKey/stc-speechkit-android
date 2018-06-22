@@ -1,5 +1,4 @@
 # stc-speechkit-android
-<h2>STC SpeechKit sample for android</h2>
 <p>Use the STC SpeechKit library to integrate speech recognition, text-to-speech and diarization.</p>
 <h2>System Requirements</h2>
 <ol>
@@ -8,7 +7,7 @@
 </ol>
 <h2>Before you get started</h2>
 <ol>
-<li>Review the <a href="https://github.com/STC-VoiceKey/stc-speechkit-android/blob/master/docs/index.html" rel="nofollow">Documentation</a> for the library API</li>
+<li>Review the <a href="https://stc-voicekey.github.io/stc-speechkit-android/index.html" rel="nofollow">Documentation</a> for the library API</li>
 <li>Register on the <a href="https://cp.speechpro.com/" rel="nofollow">website</a> and get credentials</li>
 </ol>
 <h2>Integration</h2>
