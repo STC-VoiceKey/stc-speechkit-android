@@ -15,7 +15,7 @@
 
         dependencies {
             ...   
-            implementation 'ru.speechpro.android:stcspeechkit:0.9.1'        
+            implementation 'com.speechpro.android:stcspeechkit:0.8.3'        
         }
         
 <h2>How to use STC SpeechKit</h2>
@@ -84,20 +84,7 @@
     override fun onSynthesizerResult(byteArray: ByteArray) {
         //WAV
     }
-    
-<h5>RestApiSynthesizer</h5>
-
-    restApiSynthesizer = RestApiSynthesizer.Builder(this)
-                .language(Language.Russian)
-                .speaker("Alexander")
-                .build()
-                
-    restApiSynthesizer.synthesize("Тестовый синтез")
-               
-    override fun onSynthesizerResult(byteArray: ByteArray) {
-        //WAV
-    }
-    
+        
 <h5>RestApiDiarization</h5>
 
     diarization = RestApiDiarization.Builder(this)
