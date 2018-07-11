@@ -66,7 +66,7 @@ class RestApiRecognizer private constructor(
 
     private suspend fun recognize(sessionId: String, voice: ByteArray): String? {
         var recognizedText: String
-        val response = api.sendVoiceToRecognize(sessionId, RecognizeRequest(Audio(voice, "audio/x-wav"), PACKAGE_ADVANCED))
+        val response = api.sendVoiceToRecognize(sessionId, RecognizeRequest(Audio(voice, "audio/x-wav"), packageId))
         when {
             response.isSuccessful -> recognizedText = response.body()?.text!!
             else -> {
@@ -99,14 +99,18 @@ class RestApiRecognizer private constructor(
      */
     fun recognize(file: File) {
         Logger.print(TAG, "recognize file " + file.path)
-        if (!file.path!!.contains(".wav")) {
-            listener?.onError("File is not supported.")
+        if (!file.path!!.endsWith(".wav", true)) {
+            launch(UI) {
+                listener?.onError("File is not supported.")
+            }
             return
         }
 
         val bytesArray = convertFileToByte(file.path!!)
         if (bytesArray.size > 1048576 * 3) { // 1 Megabyte = 1048576 Bytes
-            listener?.onError("File is too big. Max. 3 MB per file.")
+            launch(UI) {
+                listener?.onError("File is too big. Max. 3 MB per file.")
+            }
             return
         }
 

@@ -15,7 +15,7 @@
 
         dependencies {
             ...   
-            implementation 'com.speechpro.android:stcspeechkit:0.8.3'        
+            implementation 'com.speechpro.android:stcspeechkit:0.8.2'        
         }
         
 <h2>How to use STC SpeechKit</h2>
