@@ -7,12 +7,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import kotlinx.android.synthetic.main.fragment_tts.*
+import kotlinx.android.synthetic.main.fragment.*
 import ru.speechpro.stcspeechkit.STCSpeechKit
 import ru.speechpro.stcspeechkit.synthesize.Language
 import ru.speechpro.stcspeechkit.synthesize.RestApiSynthesizer
-import ru.speechpro.stcspeechkit.synthesize.listeners.SynthesizerListener
 import ru.speechpro.stcspeechkit.synthesize.WebSocketSynthesizer
+import ru.speechpro.stcspeechkit.synthesize.listeners.SynthesizerListener
 import ru.speechpro.stcspeechkit.util.Logger
 
 class TTSFragment : Fragment(), SynthesizerListener {
@@ -22,11 +22,14 @@ class TTSFragment : Fragment(), SynthesizerListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_tts, container, false)
+        return inflater.inflate(R.layout.fragment, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        textView.visibility = View.GONE
+        editText.visibility = View.VISIBLE
 
         val login = (activity as MainActivity).login
         val password = (activity as MainActivity).password
@@ -70,10 +73,10 @@ class TTSFragment : Fragment(), SynthesizerListener {
     }
 
     override fun onSynthesizerResult(byteArray: ByteArray) {
-        Toast.makeText(context, """onSynthesizerResult: $byteArray""", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "onSynthesizerResult: $byteArray", Toast.LENGTH_SHORT).show()
     }
 
     override fun onError(message: String) {
-        Toast.makeText(context, """onError: $message""", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "onError: $message", Toast.LENGTH_SHORT).show()
     }
 }

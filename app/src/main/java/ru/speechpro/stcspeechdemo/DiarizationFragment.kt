@@ -6,11 +6,12 @@ import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import kotlinx.android.synthetic.main.fragment_diarization.*
+import android.widget.Toast
+import kotlinx.android.synthetic.main.fragment.*
 import ru.speechpro.stcspeechkit.STCSpeechKit
 import ru.speechpro.stcspeechkit.diarization.DiarizationListener
 import ru.speechpro.stcspeechkit.diarization.RestApiDiarization
-import ru.speechpro.stcspeechkit.domain.models.Data
+import ru.speechpro.stcspeechkit.domain.models.SpeakersItem
 import ru.speechpro.stcspeechkit.util.Logger
 
 
@@ -21,13 +22,19 @@ class DiarizationFragment : Fragment(), DiarizationListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_diarization, container, false)
+        return inflater.inflate(R.layout.fragment, container, false)
     }
 
     @SuppressLint("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         Logger.print(TAG, "onViewCreated")
+
+        textView.visibility = View.VISIBLE
+        editText.visibility = View.GONE
+
+        rbWebSocket.isEnabled = false
+        rbRestApi.isEnabled = false
 
         val login = (activity as MainActivity).login
         val password = (activity as MainActivity).password
@@ -57,16 +64,12 @@ class DiarizationFragment : Fragment(), DiarizationListener {
         btnAction.text = getText(R.string.stop)
         textView.text = ""
         isRecording = true
-        rbWebSocket.isEnabled = false
-        rbRestApi.isEnabled = false
     }
 
     private fun onClickStop() {
         diarization?.stopRecording()
         btnAction.text = getText(R.string.start)
         isRecording = false
-        rbWebSocket.isEnabled = true
-        rbRestApi.isEnabled = true
     }
 
     override fun onDetach() {
@@ -82,7 +85,7 @@ class DiarizationFragment : Fragment(), DiarizationListener {
         fun newInstance() = DiarizationFragment()
     }
 
-    override fun onDiarizationResult(result: Data) {
+    override fun onDiarizationResult(result: List<SpeakersItem>) {
         textView.text = result.toString()
     }
 
@@ -103,11 +106,11 @@ class DiarizationFragment : Fragment(), DiarizationListener {
     }
 
     override fun onRecordingError(message: String) {
-        //TODO("not implemented")
+        Toast.makeText(context, "onRecordingError: $message", Toast.LENGTH_LONG).show()
     }
 
     override fun onError(message: String) {
-        //TODO("not implemented")
+        Toast.makeText(context, "onError: $message", Toast.LENGTH_LONG).show()
     }
 
 }

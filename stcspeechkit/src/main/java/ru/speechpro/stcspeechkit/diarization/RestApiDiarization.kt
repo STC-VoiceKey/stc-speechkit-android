@@ -1,6 +1,7 @@
 package ru.speechpro.stcspeechkit.diarization
 
-import android.support.annotation.RequiresPermission
+import com.fasterxml.jackson.core.JsonParseException
+import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.android.UI
@@ -12,16 +13,15 @@ import ru.speechpro.stcspeechkit.STCSpeechKit.username
 import ru.speechpro.stcspeechkit.common.AUDIO_ENCODING
 import ru.speechpro.stcspeechkit.common.AUDIO_SOURCE
 import ru.speechpro.stcspeechkit.common.CHANNELS
-import ru.speechpro.stcspeechkit.domain.models.Audio
-import ru.speechpro.stcspeechkit.domain.models.Data
-import ru.speechpro.stcspeechkit.domain.models.DiarizationRequest
-import ru.speechpro.stcspeechkit.domain.models.ErrorResponse
+import ru.speechpro.stcspeechkit.domain.models.*
 import ru.speechpro.stcspeechkit.domain.service.DiarizationService
 import ru.speechpro.stcspeechkit.interfaces.IAudioRecorder
 import ru.speechpro.stcspeechkit.media.AudioListener
 import ru.speechpro.stcspeechkit.media.AudioRecorder
 import ru.speechpro.stcspeechkit.util.AudioConverter
 import ru.speechpro.stcspeechkit.util.Logger
+import java.io.IOException
+import kotlin.reflect.KClass
 
 /**
  * RestApiDiarization class contains methods for diarization API
@@ -39,7 +39,7 @@ class RestApiDiarization private constructor(
 ) : IAudioRecorder, AudioListener {
 
     private val job = Job()
-    private val api = DiarizationService(STCSpeechKit.diarizationService)
+    private val api = DiarizationService(STCSpeechKit.diarizationService, STCSpeechKit.sessionClient)
     private val audioRecorder: AudioRecorder = AudioRecorder()
     private var session: String? = null
 
@@ -69,38 +69,37 @@ class RestApiDiarization private constructor(
     }
 
     private suspend fun startSession(): String? {
-        var sessionId: String? = null
-        val response = api.startSession(username, password, domainId)
-        when {
-            response.isSuccessful -> sessionId = response.body()?.sessionId
-        }
-
-        return sessionId
+        return api.startSession(username, password, domainId)
     }
 
     private suspend fun checkSession(sessionId: String): Boolean {
-        var isOpenSession = false
-        val response = api.checkSession(sessionId)
-        when {
-            response.code() == 200 -> isOpenSession = true
-        }
-
-        return isOpenSession
+        return api.checkSession(sessionId)
     }
 
     private suspend fun closeSession(sessionId: String) {
         api.closeSession(sessionId)
     }
 
-    private suspend fun diarization(sessionId: String, voice: ByteArray): Data? {
-        var result: Data?
-        val response = api.sendVoiceToDiarization(sessionId, DiarizationRequest(Audio(voice, "audio/s16be")))
+    private suspend fun diarization(sessionId: String, voice: ByteArray): List<SpeakersItem>? {
+        val result: List<SpeakersItem>?
+        val response = api.sendVoiceToDiarization(sessionId, DiarizationRequest(voice))
         when {
-            response.isSuccessful -> result = response.body()?.data
+            response.isSuccessful -> result = response.body()?.speakers
             else -> {
                 val error = response.errorBody()?.string()
                 val mapper = ObjectMapper()
-                val errorResponse = mapper.readValue(error, ErrorResponse::class.java)
+                val errorResponse: ErrorResponse = try {
+                    mapper.readValue(error, ErrorResponse::class.java)
+                } catch (ioe: IOException) {
+                    Logger.withCause(TAG, ioe)
+                    throw Throwable(ioe)
+                } catch (jpe: JsonParseException) {
+                    Logger.withCause(TAG, jpe)
+                    throw Throwable(jpe)
+                } catch (jme: JsonMappingException) {
+                    Logger.withCause(TAG, jme)
+                    throw Throwable(jme)
+                }
                 throw Throwable("""Reason: ${errorResponse.reason}, message: ${errorResponse.message}""")
             }
         }
@@ -123,6 +122,50 @@ class RestApiDiarization private constructor(
         }
 
         job.cancel()
+    }
+
+    private fun launchCoroutine(voice: ByteArray, hasWav: Boolean) {
+        launch(job) {
+            try {
+                when {
+                    session == null || !checkSession(session!!) -> session = startSession()
+                }
+
+                val result = when {
+                    hasWav -> diarization(session!!, voice)
+                    else -> diarization(session!!, AudioConverter.rawToWave(STCSpeechKit.applicationContext, voice, sampleRate))
+                }
+
+                result?.let {
+                    launch(UI) {
+                        listener?.onDiarizationResult(it)
+                    }
+                }
+            } catch (throwable: Throwable) {
+                Logger.withCause(TAG, throwable)
+                launch(UI) {
+                    listener?.onRecordingError(throwable.message!!)
+                }
+            }
+        }
+    }
+
+    /**
+     * ByteArray Diarization
+     *
+     * @param ByteArray WAV data
+     */
+    fun diarization(voice: ByteArray) {
+        Logger.print(TAG, "diarization file " + voice)
+
+        if (voice.size > 1048576 * 3) { // 1 Megabyte = 1048576 Bytes
+            launch(UI) {
+                listener?.onError("ByteArray is too big. Max. 3 MB per byte array.")
+            }
+            return
+        }
+
+        launchCoroutine(voice, true)
     }
 
     /**
@@ -174,32 +217,7 @@ class RestApiDiarization private constructor(
         launch(UI) {
             listener?.onRecordingStop()
         }
-
-        launch(job) {
-            try {
-                when {
-                    session == null || !checkSession(session!!) -> session = startSession()
-                }
-
-                val wav = AudioConverter.rawToWave(STCSpeechKit.applicationContext, voice, sampleRate)
-
-                val data = diarization(session!!, wav!!)
-
-                data?.let {
-                    launch(UI) {
-                        listener?.onDiarizationResult(it)
-                    }
-                }
-            } catch (throwable: Throwable) {
-                Logger.withCause(TAG, throwable)
-                throwable.message?.let {
-                    launch(UI) {
-                        listener?.onRecordingError(it)
-                    }
-                }
-
-            }
-        }
+        voice?.let { launchCoroutine(it, false) }
     }
 
     override fun onCancel() {

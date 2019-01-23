@@ -59,6 +59,12 @@ class MainActivity : AppCompatActivity(), ActivityCompat.OnRequestPermissionsRes
                         .commit()
                 return@OnNavigationItemSelectedListener true
             }
+//            R.id.navigation_anti_spoofing -> {
+//                supportFragmentManager.beginTransaction()
+//                        .replace(R.id.container, AntiSpoofingFragment.newInstance())
+//                        .commit()
+//                return@OnNavigationItemSelectedListener true
+//            }
         }
         false
     }

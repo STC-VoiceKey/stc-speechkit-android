@@ -8,7 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import kotlinx.android.synthetic.main.fragment_asr.*
+import kotlinx.android.synthetic.main.fragment.*
 import ru.speechpro.stcspeechkit.STCSpeechKit
 import ru.speechpro.stcspeechkit.interfaces.IAudioRecorder
 import ru.speechpro.stcspeechkit.recognize.RestApiRecognizer
@@ -26,13 +26,16 @@ class ASRFragment : Fragment(), RecognizerListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
 
-        return inflater.inflate(R.layout.fragment_asr, container, false)
+        return inflater.inflate(R.layout.fragment, container, false)
     }
 
     @SuppressLint("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         Logger.print(TAG, "onViewCreated")
+
+        textView.visibility = View.VISIBLE
+        editText.visibility = View.GONE
 
         val login = (activity as MainActivity).login
         val password = (activity as MainActivity).password
@@ -122,13 +125,11 @@ class ASRFragment : Fragment(), RecognizerListener {
     }
 
     override fun onRecordingError(message: String) {
-        Logger.print(TAG, "onRecordingError $message")
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "onRecordingError: $message", Toast.LENGTH_SHORT).show()
     }
 
     override fun onError(message: String) {
-        Logger.print(TAG, "onError $message")
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "onError: $message", Toast.LENGTH_SHORT).show()
     }
 
 }

@@ -5,11 +5,11 @@ apply plugin: 'kotlin-android-extensions'
 
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
     defaultConfig {
         applicationId "ru.speechpro.android.stcspeechdemo"
         minSdkVersion 19
-        targetSdkVersion 27
+        targetSdkVersion 28
         versionCode 2
         versionName "1.0.1"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -17,13 +17,22 @@ android {
             useSupportLibrary = true
         }
     }
+    signingConfigs {
+        release {
+            storeFile file('keystore/speechkit.jks')
+            storePassword '123456As'
+            keyAlias 'speechkit'
+            keyPassword '123456As'
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
-    buildToolsVersion '27.0.3'
+    buildToolsVersion '28.0.2'
 }
 
 dependencies {
@@ -31,9 +40,9 @@ dependencies {
     implementation project(path: ':stcspeechkit')
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     implementation "com.android.support:appcompat-v7:$appcompat_version"
-    implementation 'com.android.support:design:27.1.1'
+    implementation "com.android.support:design:$appcompat_version"
     implementation "com.android.support.constraint:constraint-layout:$constraint_version"
-    implementation 'com.android.support:support-v4:27.1.1'
+    implementation "com.android.support:support-v4:$appcompat_version"
     testImplementation "junit:junit:$junit_version"
     androidTestImplementation "com.android.support.test:runner:$runner_version"
     androidTestImplementation "com.android.support.test.espresso:espresso-core:$espresso_version"

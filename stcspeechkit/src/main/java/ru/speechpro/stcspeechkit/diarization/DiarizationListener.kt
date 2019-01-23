@@ -1,8 +1,8 @@
 package ru.speechpro.stcspeechkit.diarization
 
+import ru.speechpro.stcspeechkit.domain.models.SpeakersItem
 import ru.speechpro.stcspeechkit.interfaces.AudioRecorderListener
 import ru.speechpro.stcspeechkit.interfaces.BaseListener
-import ru.speechpro.stcspeechkit.domain.models.Data
 
 /**
  * Implemented this in order for RestApiDiarization to be able to callback in certain situations.
@@ -16,5 +16,5 @@ interface DiarizationListener : AudioRecorderListener, BaseListener {
      *
      * @param result text
      */
-    fun onDiarizationResult(result: Data)
+    fun onDiarizationResult(result: List<SpeakersItem>)
 }

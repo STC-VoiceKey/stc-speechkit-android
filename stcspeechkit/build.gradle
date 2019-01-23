@@ -3,14 +3,18 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'org.jetbrains.dokka-android'
 
+//apply from: 'maven-push.gradle'
+//apply from: 'uploadArchives.gradle'
+
+
 android {
     compileSdkVersion 27
 
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 27
-        versionCode 1
-        versionName "0.9.1"
+        versionCode 4
+        versionName "0.8.4"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
@@ -20,13 +24,13 @@ android {
         debug {
 //            applicationIdSuffix '.debug'
 //            versionNameSuffix '-DEBUG'
-//            buildConfigField "Boolean", "LOG", 'true'
+            buildConfigField "Boolean", "LOG", 'true'
         }
         release {
             minifyEnabled false
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-//            buildConfigField "Boolean", "LOG", 'false'
+            buildConfigField "Boolean", "LOG", 'false'
 //            signingConfig signingConfigs.release
         }
     }
@@ -49,6 +53,8 @@ dependencies {
     androidTestImplementation "com.android.support.test.espresso:espresso-core:$espresso_version"
     //websocket
     implementation 'com.neovisionaries:nv-websocket-client:2.4'
+    //session client
+    implementation 'com.speechpro.android:session-client:0.9.8-SNAPSHOT'
 }
 repositories {
     mavenCentral()
@@ -64,8 +70,6 @@ task dokkaJavadoc(overwrite: true, type: org.jetbrains.dokka.gradle.DokkaAndroid
     //No default documentation link to kotlin-stdlib
     noStdlibLink = false
 }
-
-apply from: 'uploadArchives.gradle'
 
 kotlin {
     experimental {

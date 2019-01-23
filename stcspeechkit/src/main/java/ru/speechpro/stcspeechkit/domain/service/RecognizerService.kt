@@ -1,5 +1,6 @@
 package ru.speechpro.stcspeechkit.domain.service
 
+import com.speechpro.android.session.session_library.SessionClientFactory
 import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.withContext
 import retrofit2.Response
@@ -11,20 +12,9 @@ import ru.speechpro.stcspeechkit.domain.models.*
  */
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 class RecognizerService constructor(
-    private val recognizerApi: RecognizeApi
-) {
-
-    suspend fun closeSession(sessionId: String): Response<Void> = withContext(CommonPool) {
-        recognizerApi.closeSession(sessionId).await()
-    }
-
-    suspend fun checkSession(sessionId: String): Response<Void> = withContext(CommonPool) {
-        recognizerApi.checkSession(sessionId).await()
-    }
-
-    suspend fun startSession(username: String, password: String, domainId: Int): Response<SessionIdResponse> = withContext(CommonPool) {
-        recognizerApi.startSession(StartSessionRequest(username, password, domainId)).await()
-    }
+    private val recognizerApi: RecognizeApi,
+    sessionClient: SessionClientFactory.SessionClient
+) : BaseService(sessionClient) {
 
     suspend fun getAllPackages(sessionId: String): Response<List<PackageResponse>> = withContext(CommonPool) {
         recognizerApi.getAllPackages(sessionId).await()

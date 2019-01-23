@@ -6,6 +6,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
  * @author Alexander Grigal
  */
 data class DiarizationResponse(
-    @JsonProperty("data")
-    val data: Data
+    @JsonProperty("speakers")
+    var speakers: List<SpeakersItem>?
 )

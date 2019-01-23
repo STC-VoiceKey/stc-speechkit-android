@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.experimental.CoroutineCallAdapterFactory
+import com.speechpro.android.session.session_library.SessionClientFactory
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.ResponseBody
@@ -11,12 +12,14 @@ import okio.Buffer
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 import ru.speechpro.stcspeechkit.common.BASE_URL
-import ru.speechpro.stcspeechkit.util.AppInfo.getVersionCode
-import ru.speechpro.stcspeechkit.util.AppInfo.getVersionName
-import ru.speechpro.stcspeechkit.util.Logger
+import ru.speechpro.stcspeechkit.common.SESSION_BASE_URL
+import ru.speechpro.stcspeechkit.data.network.AntiSpoofingApi
 import ru.speechpro.stcspeechkit.data.network.DiarizationApi
 import ru.speechpro.stcspeechkit.data.network.RecognizeApi
 import ru.speechpro.stcspeechkit.data.network.SynthesizeApi
+import ru.speechpro.stcspeechkit.util.AppInfo.getVersionCode
+import ru.speechpro.stcspeechkit.util.AppInfo.getVersionName
+import ru.speechpro.stcspeechkit.util.Logger
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlin.properties.Delegates
@@ -91,6 +94,22 @@ object STCSpeechKit {
     var diarizationService: DiarizationApi
         private set
 
+    /**
+     * Retrieves the anti spoofing service.
+     *
+     * @return the anti spoofing service if is initialized
+     */
+    var antiSpoofingService: AntiSpoofingApi
+        private set
+
+    /**
+     * Retrieves the anti spoofing service.
+     *
+     * @return the anti spoofing service if is initialized
+     */
+    var sessionClient: SessionClientFactory.SessionClient
+        private set
+
     init {
         val okHttpClient = OkHttpClient.Builder()
                 .addInterceptor { chain ->
@@ -132,6 +151,8 @@ object STCSpeechKit {
         recognizeService = retrofit.create(RecognizeApi::class.java)
         synthesizeService = retrofit.create(SynthesizeApi::class.java)
         diarizationService = retrofit.create(DiarizationApi::class.java)
+        antiSpoofingService = retrofit.create(AntiSpoofingApi::class.java)
+        sessionClient = SessionClientFactory.get(SESSION_BASE_URL, true)
     }
 
     /**

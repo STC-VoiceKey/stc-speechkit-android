@@ -1,11 +1,9 @@
 package ru.speechpro.stcspeechkit.synthesize
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch
 import ru.speechpro.stcspeechkit.STCSpeechKit
-import ru.speechpro.stcspeechkit.domain.models.ErrorResponse
 import ru.speechpro.stcspeechkit.domain.models.LangResponse
 import ru.speechpro.stcspeechkit.domain.models.LangVoicesResponse
 import ru.speechpro.stcspeechkit.domain.service.SynthesizerService
@@ -18,7 +16,7 @@ import ru.speechpro.stcspeechkit.util.Logger
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 abstract class BaseSynthesizer {
 
-    val api = SynthesizerService(STCSpeechKit.synthesizeService)
+    val api = SynthesizerService(STCSpeechKit.synthesizeService, STCSpeechKit.sessionClient)
     val job = Job()
 
     var session: String? = null
@@ -28,29 +26,11 @@ abstract class BaseSynthesizer {
     }
 
     suspend fun startSession(): String? {
-        var sessionId: String?
-        val response = api.startSession(STCSpeechKit.username, STCSpeechKit.password, STCSpeechKit.domainId)
-        when {
-            response.isSuccessful -> sessionId = response.body()?.sessionId
-            else -> {
-                val error = response.errorBody()?.string()
-                val mapper = ObjectMapper()
-                val errorResponse = mapper.readValue(error, ErrorResponse::class.java)
-
-                throw Throwable("""Reason: ${errorResponse.reason}, message: ${errorResponse.message}""")
-            }
-        }
-
-        return sessionId
+        return api.startSession(STCSpeechKit.username, STCSpeechKit.password, STCSpeechKit.domainId)
     }
 
     suspend fun checkSession(sessionId: String): Boolean {
-        var isOpenSession = false
-        val response = api.checkSession(sessionId)
-        when {
-            response.code() == 200 -> isOpenSession = true
-        }
-        return isOpenSession
+        return api.checkSession(sessionId)
     }
 
     suspend fun closeSession(sessionId: String) {
@@ -71,11 +51,11 @@ abstract class BaseSynthesizer {
                     return true
                 }
             }
-
+        } else {
+            throw Throwable(response.message())
         }
 
         return false
-
     }
 
     suspend fun getFirstSpeaker(sessionId: String, language: Language): String? {

@@ -1,7 +1,7 @@
 package ru.speechpro.stcspeechkit.recognize.listeners
 
-import ru.speechpro.stcspeechkit.interfaces.BaseListener
 import ru.speechpro.stcspeechkit.domain.models.PackageResponse
+import ru.speechpro.stcspeechkit.interfaces.BaseListener
 
 
 /**

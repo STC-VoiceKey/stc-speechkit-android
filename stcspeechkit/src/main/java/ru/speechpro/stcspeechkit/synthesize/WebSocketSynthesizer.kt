@@ -9,7 +9,6 @@ import kotlinx.coroutines.experimental.launch
 import ru.speechpro.stcspeechkit.common.*
 import ru.speechpro.stcspeechkit.domain.models.StreamSynthesizeRequest
 import ru.speechpro.stcspeechkit.domain.models.Text
-import ru.speechpro.stcspeechkit.recognize.WebSocketRecognizer
 import ru.speechpro.stcspeechkit.synthesize.listeners.SynthesizerListener
 import ru.speechpro.stcspeechkit.util.Logger
 

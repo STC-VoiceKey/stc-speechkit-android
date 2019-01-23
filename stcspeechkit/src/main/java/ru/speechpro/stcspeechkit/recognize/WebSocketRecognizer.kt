@@ -1,6 +1,5 @@
 package ru.speechpro.stcspeechkit.recognize
 
-import android.support.annotation.RequiresPermission
 import com.neovisionaries.ws.client.*
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.launch

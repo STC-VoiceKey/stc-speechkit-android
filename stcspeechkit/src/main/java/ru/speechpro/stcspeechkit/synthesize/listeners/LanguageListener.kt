@@ -1,8 +1,8 @@
 package ru.speechpro.stcspeechkit.synthesize.listeners
 
-import ru.speechpro.stcspeechkit.interfaces.BaseListener
 import ru.speechpro.stcspeechkit.domain.models.LangResponse
 import ru.speechpro.stcspeechkit.domain.models.LangVoicesResponse
+import ru.speechpro.stcspeechkit.interfaces.BaseListener
 
 /**
  * Implemented this in order for LanguageSynthesizer to be able to callback in certain situations.

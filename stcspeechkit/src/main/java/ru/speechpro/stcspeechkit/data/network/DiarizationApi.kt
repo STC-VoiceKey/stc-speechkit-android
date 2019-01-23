@@ -3,7 +3,10 @@ package ru.speechpro.stcspeechkit.data.network
 import kotlinx.coroutines.experimental.Deferred
 import retrofit2.Response
 import retrofit2.http.*
-import ru.speechpro.stcspeechkit.domain.models.*
+import ru.speechpro.stcspeechkit.domain.models.DiarizationRequest
+import ru.speechpro.stcspeechkit.domain.models.DiarizationResponse
+import ru.speechpro.stcspeechkit.domain.models.SessionIdResponse
+import ru.speechpro.stcspeechkit.domain.models.StartSessionRequest
 
 /**
  * @author Alexander Grigal

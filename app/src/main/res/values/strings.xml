@@ -3,6 +3,7 @@
     <string name="title_asr">ASR</string>
     <string name="title_tts">TTS</string>
     <string name="title_diarization">Diarization</string>
+    <string name="title_anti_spoofing">Anti spoofing</string>
 
     <string name="hello_blank_fragment">Hello blank diarization fragment</string>
     <string name="websocket">WebSocket</string>

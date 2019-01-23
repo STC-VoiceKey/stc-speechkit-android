@@ -16,4 +16,9 @@
         android:icon="@drawable/ic_diarization_24dp"
         android:title="@string/title_diarization" />
 
+    <!--<item-->
+        <!--android:id="@+id/navigation_anti_spoofing"-->
+        <!--android:icon="@drawable/ic_anti_spoofing_24dp"-->
+        <!--android:title="@string/title_anti_spoofing" />-->
+
 </menu>
