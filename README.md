@@ -12,6 +12,19 @@
 </ol>
 <h2>Integration</h2>
 <p>Download the <a href="https://github.com/STC-VoiceKey/stc-speechkit-android/" rel="nofollow">project</a> and compile from the sources or use Gradle:</p>
+<p>Add the dependency to your project's top-level build.gradle:</p>
+
+        allprojects {
+            repositories {
+                google()
+                jcenter()
+                maven {
+                    url 'https://oss.sonatype.org/content/repositories/snapshots'
+                }
+            }
+        }
+
+<p>Then add the plugin to your app-level build.gradle:</p>
 
         dependencies {
             ...   
