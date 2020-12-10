@@ -6,7 +6,7 @@ uploadArchives {
             repository(url: "file:/home/alexander/.m2/repository")
             pom {
                 artifactId = "stcspeechkit"
-                version = "0.8.4"
+                version = "0.8.5"
                 groupId = "com.speechpro.android"
             }
         }

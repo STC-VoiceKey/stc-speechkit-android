@@ -3,9 +3,10 @@ package ru.speechpro.stcspeechkit.diarization
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
-import kotlinx.coroutines.experimental.Job
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.STCSpeechKit
 import ru.speechpro.stcspeechkit.STCSpeechKit.domainId
 import ru.speechpro.stcspeechkit.STCSpeechKit.password
@@ -116,7 +117,7 @@ class RestApiDiarization private constructor(
         audioRecorder.cancel()
 
         session?.let {
-            launch(UI) {
+            GlobalScope.launch(Dispatchers.Main) {
                 closeSession(it)
             }
         }
@@ -125,7 +126,7 @@ class RestApiDiarization private constructor(
     }
 
     private fun launchCoroutine(voice: ByteArray, hasWav: Boolean) {
-        launch(job) {
+        GlobalScope.launch(job) {
             try {
                 when {
                     session == null || !checkSession(session!!) -> session = startSession()
@@ -137,13 +138,13 @@ class RestApiDiarization private constructor(
                 }
 
                 result?.let {
-                    launch(UI) {
+                    launch(Dispatchers.Main) {
                         listener?.onDiarizationResult(it)
                     }
                 }
             } catch (throwable: Throwable) {
                 Logger.withCause(TAG, throwable)
-                launch(UI) {
+                launch(Dispatchers.Main) {
                     listener?.onRecordingError(throwable.message!!)
                 }
             }
@@ -159,7 +160,7 @@ class RestApiDiarization private constructor(
         Logger.print(TAG, "diarization file " + voice)
 
         if (voice.size > 1048576 * 3) { // 1 Megabyte = 1048576 Bytes
-            launch(UI) {
+            GlobalScope.launch(Dispatchers.Main) {
                 listener?.onError("ByteArray is too big. Max. 3 MB per byte array.")
             }
             return
@@ -196,14 +197,14 @@ class RestApiDiarization private constructor(
 
     override fun onStart() {
         Logger.print(TAG, "onStart")
-        launch(UI) {
+        GlobalScope.launch(Dispatchers.Main) {
             listener?.onRecordingStart()
         }
     }
 
     override fun onProcess(amplitude: Short) {
         Logger.print(TAG, "onProcess: $amplitude")
-        launch(UI) {
+        GlobalScope.launch(Dispatchers.Main) {
             listener?.onPowerDbUpdate(amplitude)
         }
     }
@@ -214,7 +215,7 @@ class RestApiDiarization private constructor(
 
     override fun onStop(voice: ByteArray?) {
         Logger.print(TAG, "onStop: $voice")
-        launch(UI) {
+        GlobalScope.launch(Dispatchers.Main) {
             listener?.onRecordingStop()
         }
         voice?.let { launchCoroutine(it, false) }
@@ -222,7 +223,7 @@ class RestApiDiarization private constructor(
 
     override fun onCancel() {
         Logger.print(TAG, "onCancel")
-        launch(UI) {
+        GlobalScope.launch(Dispatchers.Main) {
             listener?.onRecordingCancel()
         }
     }

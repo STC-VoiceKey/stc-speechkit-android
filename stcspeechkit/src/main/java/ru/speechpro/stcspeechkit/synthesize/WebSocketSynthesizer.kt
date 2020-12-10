@@ -4,8 +4,9 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import com.neovisionaries.ws.client.*
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.common.*
 import ru.speechpro.stcspeechkit.domain.models.StreamSynthesizeRequest
 import ru.speechpro.stcspeechkit.domain.models.Text
@@ -82,7 +83,7 @@ class WebSocketSynthesizer private constructor(
     private fun prepare(webSocketListener: WebSocketState) {
         Logger.print(TAG, "prepare")
 
-        launch(job) {
+        GlobalScope.launch(job) {
             try {
                 if (session == null || !!checkSession(session!!)) {
                     session = startSession()
@@ -91,7 +92,7 @@ class WebSocketSynthesizer private constructor(
 
                         if (!isSupportedLanguage(session!!, language)) {
                             Logger.print(TAG, LANGUAGE_IS_NOT_SUPPORTED)
-                            launch(UI) {
+                            GlobalScope.launch(Dispatchers.Main) {
                                 listener?.onError(LANGUAGE_IS_NOT_SUPPORTED)
                             }
                             return@launch
@@ -99,7 +100,7 @@ class WebSocketSynthesizer private constructor(
 
                         if (!containsSpeakerForLanguage(session!!, language, speaker)) {
                             Logger.print(TAG, SPEAKER_IS_NOT_SUPPORTED)
-                            launch(UI) {
+                            GlobalScope.launch(Dispatchers.Main) {
                                 listener?.onError(SPEAKER_IS_NOT_SUPPORTED)
                             }
                             return@launch
@@ -116,7 +117,7 @@ class WebSocketSynthesizer private constructor(
                 }
             } catch (throwable: Throwable) {
                 Logger.withCause(TAG, throwable)
-                launch(UI) {
+                GlobalScope.launch(Dispatchers.Main) {
                     listener?.onError(throwable.message!!)
                 }
             }
@@ -154,7 +155,7 @@ class WebSocketSynthesizer private constructor(
                                 reason = "Unknown error"
                             }
 
-                            launch(UI) {
+                            GlobalScope.launch(Dispatchers.Main) {
                                 listener?.onError(reason)
                             }
 
@@ -166,7 +167,7 @@ class WebSocketSynthesizer private constructor(
                             when {
                                 exception != null -> {
                                     Logger.withCause(TAG, exception)
-                                    launch(UI) {
+                                    GlobalScope.launch(Dispatchers.Main) {
                                         listener?.onError(exception.localizedMessage)
                                     }
 
@@ -192,7 +193,7 @@ class WebSocketSynthesizer private constructor(
         } catch (ex: WebSocketException) {
             Logger.withCause(TAG, ex)
             ex.message?.let {
-                launch(UI) {
+                GlobalScope.launch(Dispatchers.Main) {
                     listener?.onError(it)
                 }
             }

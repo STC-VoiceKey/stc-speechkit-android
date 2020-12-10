@@ -3,7 +3,7 @@ package ru.speechpro.stcspeechkit
 import android.annotation.SuppressLint
 import android.content.Context
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.jakewharton.retrofit2.adapter.kotlin.coroutines.experimental.CoroutineCallAdapterFactory
+import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import com.speechpro.android.session.session_library.SessionClientFactory
 import okhttp3.OkHttpClient
 import okhttp3.Request

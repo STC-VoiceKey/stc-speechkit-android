@@ -1,7 +1,8 @@
 package ru.speechpro.stcspeechkit.recognize
 
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.recognize.listeners.PackagesListener
 import ru.speechpro.stcspeechkit.util.Logger
 
@@ -22,7 +23,7 @@ class PackageRecognizer constructor(
     fun getAvailablePackages() {
         Logger.print(TAG, "getAvailablePackages")
 
-        launch(job) {
+        GlobalScope.launch(job) {
             try {
                 when {
                     session == null || !checkSession(session!!) -> session = startSession()
@@ -32,7 +33,7 @@ class PackageRecognizer constructor(
                         Logger.print(TAG, session!!)
                         val result = availablePackages(session!!)
                         result?.let {
-                            launch(UI) {
+                            launch(Dispatchers.Main) {
                                 listener?.onPackagesResult(it)
                             }
                         }
@@ -40,7 +41,7 @@ class PackageRecognizer constructor(
                 }
             } catch (throwable: Throwable) {
                 Logger.withCause(TAG, throwable)
-                launch(UI) {
+                launch(Dispatchers.Main) {
                     listener?.onError(throwable.message!!)
                 }
             }

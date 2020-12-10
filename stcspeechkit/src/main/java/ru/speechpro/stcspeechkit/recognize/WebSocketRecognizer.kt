@@ -1,8 +1,9 @@
 package ru.speechpro.stcspeechkit.recognize
 
 import com.neovisionaries.ws.client.*
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.common.*
 import ru.speechpro.stcspeechkit.domain.models.StreamRecognizeRequest
 import ru.speechpro.stcspeechkit.interfaces.IAudioRecorder
@@ -111,7 +112,7 @@ class WebSocketRecognizer private constructor(
                                 reason = "Unknown error"
                             }
 
-                            launch(UI) {
+                            GlobalScope.launch(Dispatchers.Main) {
                                 listener?.onError(reason)
                             }
                         }
@@ -119,7 +120,7 @@ class WebSocketRecognizer private constructor(
                         override fun onConnectError(websocket: WebSocket?, exception: WebSocketException?) {
                             super.onConnectError(websocket, exception)
                             exception?.let { Logger.withCause(TAG, it) }
-                            launch(UI) {
+                            GlobalScope.launch(Dispatchers.Main) {
                                 exception?.let { listener?.onError(it.error.name) }
                             }
                         }
@@ -127,7 +128,7 @@ class WebSocketRecognizer private constructor(
                         override fun onTextMessage(websocket: WebSocket?, text: String?) {
                             super.onTextMessage(websocket, text)
                             text?.let { Logger.print(TAG, it) }
-                            launch(UI) {
+                            GlobalScope.launch(Dispatchers.Main) {
                                 text?.let { listener?.onRecognizerTextMessage(it) }
                             }
                         }
@@ -142,7 +143,7 @@ class WebSocketRecognizer private constructor(
         } catch (ex: WebSocketException) {
             ex.message?.let {
                 Logger.print(TAG, it)
-                launch(UI) {
+                GlobalScope.launch(Dispatchers.Main) {
                     listener?.onError(it)
                 }
             }
@@ -167,7 +168,7 @@ class WebSocketRecognizer private constructor(
     override fun startRecording() {
         Logger.print(TAG, "start recording...")
 
-        launch(job) {
+        GlobalScope.launch(job) {
             try {
                 when {
                     session == null || checkSession(session!!) -> session = startSession()
@@ -182,7 +183,7 @@ class WebSocketRecognizer private constructor(
 
             } catch (throwable: Throwable) {
                 Logger.withCause(TAG, throwable)
-                launch(UI) {
+                GlobalScope.launch(Dispatchers.Main) {
                     listener?.onError(throwable.message!!)
                 }
             }
@@ -196,13 +197,13 @@ class WebSocketRecognizer private constructor(
         Logger.print(TAG, "stop recording")
         audioRecorder.stop()
 
-        launch(job) {
+        GlobalScope.launch(job) {
             try {
                 when {
                     session != null && transaction != null -> {
                         val response = closeStream(session!!, transaction!!)
                         response?.let {
-                            launch(UI) {
+                            GlobalScope.launch(Dispatchers.Main) {
                                 listener?.onRecognizerTextResult(it)
                             }
                         }
@@ -210,7 +211,7 @@ class WebSocketRecognizer private constructor(
                 }
             } catch (throwable: Throwable) {
                 Logger.withCause(TAG, throwable)
-                launch(UI) {
+                GlobalScope.launch(Dispatchers.Main) {
                     listener?.onError(throwable.message!!)
                 }
             }
@@ -227,14 +228,14 @@ class WebSocketRecognizer private constructor(
 
     override fun onStart() {
         Logger.print(TAG, "onStart")
-        launch(UI) {
+        GlobalScope.launch(Dispatchers.Main) {
             listener?.onRecordingStart()
         }
     }
 
     override fun onProcess(amplitude: Short) {
         Logger.print(TAG, "onProcess: $amplitude")
-        launch(UI) {
+        GlobalScope.launch(Dispatchers.Main) {
             listener?.onPowerDbUpdate(amplitude)
         }
     }
@@ -248,14 +249,14 @@ class WebSocketRecognizer private constructor(
 
     override fun onStop(voice: ByteArray?) {
         Logger.print(TAG, "onStop: $voice")
-        launch(UI) {
+        GlobalScope.launch(Dispatchers.Main) {
             listener?.onRecordingStop()
         }
     }
 
     override fun onCancel() {
         Logger.print(TAG, "onCancel")
-        launch(UI) {
+        GlobalScope.launch(Dispatchers.Main) {
             listener?.onRecordingCancel()
         }
     }

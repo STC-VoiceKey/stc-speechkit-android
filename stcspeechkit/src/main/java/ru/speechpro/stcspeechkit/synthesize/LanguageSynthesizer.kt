@@ -1,7 +1,8 @@
 package ru.speechpro.stcspeechkit.synthesize
 
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.synthesize.listeners.LanguageListener
 import ru.speechpro.stcspeechkit.util.Logger
 
@@ -22,7 +23,7 @@ class LanguageSynthesizer constructor(
     fun getAvailableLanguages() {
         Logger.print(TAG, "getAvailablePackages")
 
-        launch(job) {
+        GlobalScope.launch(job) {
             try {
                 when {
                     session == null || !checkSession(session!!) -> session = startSession()
@@ -34,7 +35,7 @@ class LanguageSynthesizer constructor(
                         val result = availableLanguages(session!!)
                         result?.let {
                             Logger.print(TAG, result.toString())
-                            launch(UI) {
+                            launch(Dispatchers.Main) {
                                 listener?.onAvailableLanguages(result)
                             }
                         }
@@ -42,7 +43,7 @@ class LanguageSynthesizer constructor(
                 }
             } catch (throwable: Throwable) {
                 Logger.withCause(TAG, throwable)
-                launch(UI) {
+                launch(Dispatchers.Main) {
                     listener?.onError(throwable.message!!)
                 }
             }
@@ -53,7 +54,7 @@ class LanguageSynthesizer constructor(
     fun getLanguageInfo(language: Language) {
         Logger.print(TAG, "getLanguageInfo")
 
-        launch(job) {
+        GlobalScope.launch(job) {
             try {
                 when {
                     session == null || !checkSession(session!!) -> session = startSession()
@@ -65,7 +66,7 @@ class LanguageSynthesizer constructor(
                         val result = languageInfo(session!!, language.name)
                         result?.let {
                             Logger.print(TAG, result.toString())
-                            launch(UI) {
+                            launch(Dispatchers.Main) {
                                 listener?.onLanguageInfo(result)
                             }
                         }
@@ -73,7 +74,7 @@ class LanguageSynthesizer constructor(
                 }
             } catch (throwable: Throwable) {
                 Logger.withCause(TAG, throwable)
-                launch(UI) {
+                launch(Dispatchers.Main) {
                     listener?.onError(throwable.message!!)
                 }
             }

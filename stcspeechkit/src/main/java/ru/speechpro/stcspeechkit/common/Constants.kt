@@ -20,7 +20,7 @@ const val AUDIO_ENDIANNESS = "audio/s16le"
 // Package
 const val AUDIO_MIME_TYPE = "audio/l16"
 const val TEXT_MIME_TYPE = "text/plain"
-const val PACKAGE_COMMON_PACKAGE = "CommonRus"
+const val PACKAGE_COMMON_PACKAGE = "FarField"
 const val PACKAGE_ADVANCED = "FarField"
 // WebSocket
 const val WEB_SOCKET_CONNECTION = 5000

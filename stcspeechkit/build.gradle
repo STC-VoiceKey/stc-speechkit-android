@@ -8,13 +8,13 @@ apply plugin: 'org.jetbrains.dokka-android'
 
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 27
-        versionCode 4
-        versionName "0.8.4"
+        targetSdkVersion 28
+        versionCode 5
+        versionName "0.8.5"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
@@ -34,18 +34,17 @@ android {
 //            signingConfig signingConfigs.release
         }
     }
-
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
-    implementation 'com.android.support:appcompat-v7:27.1.1'
+    implementation 'com.android.support:appcompat-v7:28.0.0'
     //retrofit
     implementation "com.squareup.retrofit2:retrofit:$retrofit_version"
     implementation "com.squareup.retrofit2:converter-jackson:$retrofit_version"
     implementation "com.squareup.retrofit2:adapter-rxjava2:$retrofit_version"
-    implementation "com.jakewharton.retrofit:retrofit2-kotlin-coroutines-experimental-adapter:$coroutines_adapter_version"
+    implementation "com.jakewharton.retrofit:retrofit2-kotlin-coroutines-adapter:$coroutines_adapter_version"
     //jackson
     implementation "com.squareup.retrofit2:converter-jackson:$jackson_version"
     testImplementation "junit:junit:$junit_version"
@@ -71,11 +70,6 @@ task dokkaJavadoc(overwrite: true, type: org.jetbrains.dokka.gradle.DokkaAndroid
     noStdlibLink = false
 }
 
-kotlin {
-    experimental {
-        coroutines "enable"
-    }
-}
 
 
 

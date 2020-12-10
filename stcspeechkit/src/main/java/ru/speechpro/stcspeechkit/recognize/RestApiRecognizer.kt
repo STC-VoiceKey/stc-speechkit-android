@@ -1,8 +1,9 @@
 package ru.speechpro.stcspeechkit.recognize
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.STCSpeechKit
 import ru.speechpro.stcspeechkit.common.AUDIO_ENCODING
 import ru.speechpro.stcspeechkit.common.AUDIO_SOURCE
@@ -93,7 +94,7 @@ class RestApiRecognizer private constructor(
     }
 
     private fun launchCoroutine(bytesArray: ByteArray, hasWav: Boolean) {
-        launch(job) {
+        GlobalScope.launch(job) {
             try {
                 when {
                     session == null || !checkSession((session!!)) -> session = startSession()
@@ -104,13 +105,13 @@ class RestApiRecognizer private constructor(
                     else -> recognize(session!!, AudioConverter.rawToWave(STCSpeechKit.applicationContext, bytesArray, sampleRate))
                 }
                 result?.let {
-                    launch(UI) {
+                    launch(Dispatchers.Main) {
                         listener?.onRecognizerTextResult(it)
                     }
                 }
             } catch (throwable: Throwable) {
                 Logger.print(TAG, throwable.message!!)
-                launch(UI) {
+                launch(Dispatchers.Main) {
                     listener?.onError(throwable.message!!)
                 }
 
@@ -127,7 +128,7 @@ class RestApiRecognizer private constructor(
         Logger.print(TAG, "recognize file " + bytesArray)
 
         if (bytesArray.size > 1048576 * 3) { // 1 Megabyte = 1048576 Bytes
-            launch(UI) {
+            GlobalScope.launch(Dispatchers.Main) {
                 listener?.onError("ByteArray is too big. Max. 3 MB per byte array.")
             }
             return
@@ -163,14 +164,14 @@ class RestApiRecognizer private constructor(
 
     override fun onStart() {
         Logger.print(TAG, "onStart")
-        launch(UI) {
+        GlobalScope.launch(Dispatchers.Main) {
             listener?.onRecordingStart()
         }
     }
 
     override fun onProcess(amplitude: Short) {
         Logger.print(TAG, "onProcess: $amplitude")
-        launch(UI) {
+        GlobalScope.launch(Dispatchers.Main) {
             listener?.onPowerDbUpdate(amplitude)
         }
     }
@@ -181,14 +182,14 @@ class RestApiRecognizer private constructor(
 
     override fun onStop(voice: ByteArray?) {
         Logger.print(TAG, "onStop: $voice")
-        launch(UI) {
+        GlobalScope.launch(Dispatchers.Main) {
             listener?.onRecordingStop()
         }
         voice?.let { launchCoroutine(it, false) }
     }
 
     override fun onCancel() {
-        launch(UI) {
+        GlobalScope.launch(Dispatchers.Main) {
             listener?.onRecordingCancel()
         }
     }

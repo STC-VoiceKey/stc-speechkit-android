@@ -1,8 +1,9 @@
 package ru.speechpro.stcspeechkit.recognize
 
-import kotlinx.coroutines.experimental.Job
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.STCSpeechKit
 import ru.speechpro.stcspeechkit.domain.models.PackageResponse
 import ru.speechpro.stcspeechkit.domain.service.RecognizerService
@@ -56,7 +57,7 @@ abstract class BaseRecognizer {
         Logger.print(TAG, "destroy")
 
         session?.let {
-            launch(UI) {
+            GlobalScope.launch(Dispatchers.Main) {
                 closeSession(it)
             }
         }

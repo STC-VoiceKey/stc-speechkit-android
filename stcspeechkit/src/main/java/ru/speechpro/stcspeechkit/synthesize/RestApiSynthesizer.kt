@@ -2,8 +2,9 @@ package ru.speechpro.stcspeechkit.synthesize
 
 import android.media.MediaPlayer
 import com.fasterxml.jackson.databind.ObjectMapper
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.STCSpeechKit
 import ru.speechpro.stcspeechkit.common.LANGUAGE_IS_NOT_SUPPORTED
 import ru.speechpro.stcspeechkit.common.SPEAKER_IS_NOT_SUPPORTED
@@ -84,7 +85,7 @@ class RestApiSynthesizer private constructor(
     fun synthesize(text: String) {
         Logger.print(TAG, "synthesize: $text")
 
-        launch(job) {
+        GlobalScope.launch(job) {
             try {
                 when {
                     session == null || !checkSession((session!!)) -> session = startSession()
@@ -93,7 +94,7 @@ class RestApiSynthesizer private constructor(
 
                 if (!isSupportedLanguage(session!!, language)) {
                     Logger.print(TAG, LANGUAGE_IS_NOT_SUPPORTED)
-                    launch(UI) {
+                    launch(Dispatchers.Main) {
                         listener?.onError(LANGUAGE_IS_NOT_SUPPORTED)
                     }
                     return@launch
@@ -101,7 +102,7 @@ class RestApiSynthesizer private constructor(
 
                 if (!containsSpeakerForLanguage(session!!, language, speaker)) {
                     Logger.print(TAG, SPEAKER_IS_NOT_SUPPORTED)
-                    launch(UI) {
+                    launch(Dispatchers.Main) {
                         listener?.onError(SPEAKER_IS_NOT_SUPPORTED)
                     }
                     return@launch
@@ -111,14 +112,14 @@ class RestApiSynthesizer private constructor(
                 when {
                     result != null -> {
                         playWav(result)
-                        launch(UI) {
+                        launch(Dispatchers.Main) {
                             listener?.onSynthesizerResult(result)
                         }
                     }
                 }
             } catch (throwable: Throwable) {
                 Logger.print(TAG, throwable.message!!)
-                launch(UI) {
+                launch(Dispatchers.Main) {
                     listener?.onError(throwable.message!!)
                 }
             }

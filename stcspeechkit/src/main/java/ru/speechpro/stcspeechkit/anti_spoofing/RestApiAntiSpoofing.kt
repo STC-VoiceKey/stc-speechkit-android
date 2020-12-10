@@ -3,9 +3,10 @@ package ru.speechpro.stcspeechkit.anti_spoofing
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.speechpro.android.session.session_library.exception.InternetConnectionException
 import com.speechpro.android.session.session_library.exception.RestException
-import kotlinx.coroutines.experimental.Job
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.STCSpeechKit
 import ru.speechpro.stcspeechkit.common.AUDIO_ENCODING
 import ru.speechpro.stcspeechkit.common.AUDIO_SOURCE
@@ -26,7 +27,7 @@ import ru.speechpro.stcspeechkit.util.Logger
  *
  * @author Alexander Grigal
  */
-@Suppress("EXPERIMENTAL_FEATURE_WARNING")
+
 class RestApiAntiSpoofing private constructor(
         private var listener: AntiSpoofingListener?,
         private val audioSource: Int,
@@ -103,7 +104,7 @@ class RestApiAntiSpoofing private constructor(
         audioRecorder.cancel()
 
         session?.let {
-            launch(UI) {
+            GlobalScope.launch(Dispatchers.Main) {
                 closeSession(it)
             }
         }
@@ -112,7 +113,7 @@ class RestApiAntiSpoofing private constructor(
     }
 
     private fun launchCoroutine(voice: ByteArray, hasWav: Boolean) {
-        launch(job) {
+        GlobalScope.launch(job) {
             try {
                 when {
                     session == null || !checkSession(session!!) -> session = startSession()
@@ -124,7 +125,7 @@ class RestApiAntiSpoofing private constructor(
                 }
 
                 result?.let {
-                    launch(UI) {
+                    launch(Dispatchers.Main) {
                         listener?.onAntiSpoofingResult(it)
                     }
                 }
@@ -134,14 +135,14 @@ class RestApiAntiSpoofing private constructor(
                     is InternetConnectionException, is RestException -> {
                         Logger.withCause(TAG, throwable)
                         throwable.message?.let {
-                            launch(UI) {
+                            launch(Dispatchers.Main) {
                                 listener?.onError(it)
                             }
                         }
                     }
                     else -> {
                         throwable.message?.let {
-                            launch(UI) {
+                            launch(Dispatchers.Main) {
                                 listener?.onRecordingError(it)
                             }
                         }
@@ -158,10 +159,10 @@ class RestApiAntiSpoofing private constructor(
      * @param ByteArray WAV data
      */
     fun antiSpoofing(voice: ByteArray) {
-        Logger.print(TAG, "diarization file " + voice)
+        Logger.print(TAG, "diarization file $voice")
 
         if (voice.size > 1048576 * 3) { // 1 Megabyte = 1048576 Bytes
-            launch(UI) {
+            GlobalScope.launch(Dispatchers.Main) {
                 listener?.onError("ByteArray is too big. Max. 3 MB per byte array.")
             }
             return
@@ -198,14 +199,14 @@ class RestApiAntiSpoofing private constructor(
 
     override fun onStart() {
         Logger.print(TAG, "onStart")
-        launch(UI) {
+        GlobalScope.launch(Dispatchers.Main) {
             listener?.onRecordingStart()
         }
     }
 
     override fun onProcess(amplitude: Short) {
         Logger.print(TAG, "onProcess: $amplitude")
-        launch(UI) {
+        GlobalScope.launch(Dispatchers.Main) {
             listener?.onPowerDbUpdate(amplitude)
         }
     }
@@ -216,7 +217,7 @@ class RestApiAntiSpoofing private constructor(
 
     override fun onStop(voice: ByteArray?) {
         Logger.print(TAG, "onStop: $voice")
-        launch(UI) {
+        GlobalScope.launch(Dispatchers.Main) {
             listener?.onRecordingStop()
         }
 
@@ -225,7 +226,7 @@ class RestApiAntiSpoofing private constructor(
 
     override fun onCancel() {
         Logger.print(TAG, "onCancel")
-        launch(UI) {
+        GlobalScope.launch(Dispatchers.Main) {
             listener?.onRecordingCancel()
         }
     }
