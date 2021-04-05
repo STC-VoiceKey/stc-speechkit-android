@@ -4,6 +4,7 @@ import android.media.MediaPlayer
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.STCSpeechKit
 import ru.speechpro.stcspeechkit.common.LANGUAGE_IS_NOT_SUPPORTED
@@ -84,6 +85,13 @@ class RestApiSynthesizer private constructor(
      */
     fun synthesize(text: String) {
         Logger.print(TAG, "synthesize: $text")
+
+        // Не уверен в актуальности данного исправления, т.к. в данный момент для каждой итераций
+        // распознавания мы создаем новый экзмепляр RestApiSynthesizer
+        // (отдельно пересоздавать job в таком сценарии нет необходимости)
+        if (job.isCancelled) {
+            job = Job()
+        }
 
         GlobalScope.launch(job) {
             try {

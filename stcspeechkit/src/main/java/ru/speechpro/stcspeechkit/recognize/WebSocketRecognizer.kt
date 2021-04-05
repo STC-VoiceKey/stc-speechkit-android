@@ -3,6 +3,7 @@ package ru.speechpro.stcspeechkit.recognize
 import com.neovisionaries.ws.client.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.common.*
 import ru.speechpro.stcspeechkit.domain.models.StreamRecognizeRequest
@@ -67,7 +68,7 @@ class WebSocketRecognizer private constructor(
         val response = api.openStream(sessionId, request)
         when {
             response.isSuccessful -> {
-                transactionId = response.headers().get("x-transaction-id")!!
+                transactionId = response.headers()["X-Transaction-Id"]!!
                 ws = response.body()!!.url
             }
         }
@@ -167,6 +168,13 @@ class WebSocketRecognizer private constructor(
      */
     override fun startRecording() {
         Logger.print(TAG, "start recording...")
+
+        // Не уверен в актуальности данного исправления, т.к. в данный момент для каждой итераций
+        // распознавания мы создаем новый экзмепляр RestApiSynthesizer
+        // (отдельно пересоздавать job в таком сценарии нет необходимости)
+        if (job.isCancelled) {
+            job = Job()
+        }
 
         GlobalScope.launch(job) {
             try {

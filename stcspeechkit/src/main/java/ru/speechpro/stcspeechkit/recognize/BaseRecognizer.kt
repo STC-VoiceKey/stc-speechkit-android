@@ -1,8 +1,8 @@
 package ru.speechpro.stcspeechkit.recognize
 
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.STCSpeechKit
 import ru.speechpro.stcspeechkit.domain.models.PackageResponse
@@ -16,7 +16,7 @@ import ru.speechpro.stcspeechkit.util.Logger
 abstract class BaseRecognizer {
 
     val api = RecognizerService(STCSpeechKit.recognizeService, STCSpeechKit.sessionClient)
-    val job = Job()
+    var job = Job()
 
     var session: String? = null
 
@@ -59,6 +59,7 @@ abstract class BaseRecognizer {
         session?.let {
             GlobalScope.launch(Dispatchers.Main) {
                 closeSession(it)
+                session = null
             }
         }
         job.cancel()
