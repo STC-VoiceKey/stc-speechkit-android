@@ -118,7 +118,11 @@ class RestApiDiarization private constructor(
 
         session?.let {
             GlobalScope.launch(Dispatchers.Main) {
-                closeSession(it)
+                try {
+                    closeSession(it)
+                } catch (ex: Exception) {
+                    Logger.print(TAG, "RestApiAntiSpoofing $ex")
+                }
             }
         }
 
