@@ -1,6 +1,7 @@
 package ru.speechpro.stcspeechkit.synthesize
 
 import android.media.MediaPlayer
+import android.util.Log
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -15,7 +16,6 @@ import ru.speechpro.stcspeechkit.domain.models.Text
 import ru.speechpro.stcspeechkit.synthesize.listeners.SynthesizerListener
 import ru.speechpro.stcspeechkit.util.Logger
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileOutputStream
 
 /**
@@ -74,6 +74,7 @@ class RestApiSynthesizer private constructor(
     override fun destroy() {
         Logger.print(TAG, "destroy")
         listener = null
+        stopMediaPlayer()
 
         super.destroy()
     }
@@ -138,16 +139,49 @@ class RestApiSynthesizer private constructor(
         val pathName = STCSpeechKit.applicationContext.getCacheDir().toString() + "/file.wav"
         val path = File(pathName)
 
-        val fos = FileOutputStream(path)
-        fos.write(wavByteArray)
-        fos.close()
+        FileOutputStream(path).use { it.write(wavByteArray) }
 
-        val mediaPlayer = MediaPlayer()
-
-        FileInputStream(path)
-        mediaPlayer.setDataSource(pathName)
-
-        mediaPlayer.prepare()
-        mediaPlayer.start()
+        stopMediaPlayer()
+        mediaPlayer = startNewMediaPlayer(pathName)
     }
+
+    /** Костыль, т.к. в апи отсутствует способ остановить голос
+     * 1) нам нужен в апи метод stopSynthesizing(), который остановит и запрос на сервер и воспроизведение голоса
+     * 2) текущая апи создавала новый MediaPlayer на каждое проигрывание и никогда не освобождала его
+     * это заканчивалось исчерпание системных ресурсов и невозможностью воспроизводить звук
+     *
+     * Либо пусть библиотека не берет на себя ответственность за запись и проигрывание файла, а только возращают нам
+     * его byteArray в листенере
+     * */
+    private var mediaPlayer: MediaPlayer? = null
+    private fun startNewMediaPlayer(pathName: String) = MediaPlayer().run {
+        try {
+            setDataSource(pathName)
+            prepare()
+            start()
+            this
+        } catch (e: Exception) {
+            Log.e(TAG, "${e.message}\n$e")
+            releaseMediaPlayer(this)
+            null
+        }
+    }
+    fun stopMediaPlayer() {
+        mediaPlayer?.let { releaseMediaPlayer(it) }
+        mediaPlayer = null
+    }
+    private fun releaseMediaPlayer(mp: MediaPlayer) = mp.apply {
+        try {
+            if (isPlaying) { stop() }
+            // важно вызывать и reset() и release()
+            // опыты показали:
+            // только при этих обоих вызовах при многочисленных проигрываниях
+            // MediaPlayer не исчерпывает системные ресурсы
+            reset()
+            release()
+        } catch(e: Exception) {
+            Log.e(TAG, "${e.message}\n$e")
+        }
+    }
+
 }
