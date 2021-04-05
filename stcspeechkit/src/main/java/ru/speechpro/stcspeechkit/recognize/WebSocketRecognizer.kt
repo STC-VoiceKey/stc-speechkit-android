@@ -1,8 +1,15 @@
 package ru.speechpro.stcspeechkit.recognize
 
+import android.annotation.SuppressLint
 import com.neovisionaries.ws.client.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.common.*
 import ru.speechpro.stcspeechkit.domain.models.StreamRecognizeRequest
@@ -11,6 +18,7 @@ import ru.speechpro.stcspeechkit.media.AudioListener
 import ru.speechpro.stcspeechkit.media.AudioRecorder
 import ru.speechpro.stcspeechkit.recognize.listeners.RecognizerListener
 import ru.speechpro.stcspeechkit.util.Logger
+import java.lang.Exception
 
 /**
  * WebSocketRecognizer class contains methods for recognize API
@@ -65,9 +73,10 @@ class WebSocketRecognizer private constructor(
         var transactionId = ""
         var ws = ""
         val response = api.openStream(sessionId, request)
+        Logger.print(TAG, "openStream Response: $response")
         when {
             response.isSuccessful -> {
-                transactionId = response.headers().get("x-transaction-id")!!
+                transactionId = response.headers()["X-Transaction-Id"]!!
                 ws = response.body()!!.url
             }
         }
@@ -168,7 +177,14 @@ class WebSocketRecognizer private constructor(
     override fun startRecording() {
         Logger.print(TAG, "start recording...")
 
-        GlobalScope.launch(job) {
+        // Не уверен в актуальности данного исправления, т.к. в данный момент для каждой итераций
+        // распознавания мы создаем новый экзмепляр RestApiSynthesizer
+        // (отдельно пересоздавать job в таком сценарии нет необходимости)
+        if (job.isCancelled) {
+            job = Job()
+        }
+
+        lastChildJob = GlobalScope.launch(job) {
             try {
                 when {
                     session == null || checkSession(session!!) -> session = startSession()
@@ -197,11 +213,12 @@ class WebSocketRecognizer private constructor(
         Logger.print(TAG, "stop recording")
         audioRecorder.stop()
 
-        GlobalScope.launch(job) {
+        lastChildJob = GlobalScope.launch(job) {
             try {
                 when {
                     session != null && transaction != null -> {
                         val response = closeStream(session!!, transaction!!)
+                        transaction = null
                         response?.let {
                             GlobalScope.launch(Dispatchers.Main) {
                                 listener?.onRecognizerTextResult(it)
@@ -261,4 +278,74 @@ class WebSocketRecognizer private constructor(
         }
     }
 
+    /**
+     * Костыль.
+     * Суть проблемы:
+     *  Старт/Стоп записи происходит запуском (launch) корутины
+     *  Соответственно, последовательный быстрый запуск startRecording(), а затем stopRecording()
+     *   начинают конкурировать между собой, краш приложения.
+     *
+     * Избавляюсь от данной проблемы используя для исполнения обоих методов actor-корутину.
+     *   (команды выполняются строго последовательно в порядке вызова в одной и той же корутине)
+     *
+     *  Сделано чтобы работало, а не чтобы было красиво архитектурно.
+     *  Мы старались делать минимальные вмешательства в код библиотеки.
+     * */
+    inner class StartStopHelper {
+        private val scopeExceptionHandler = CoroutineExceptionHandler{ _, ex -> handleError(ex) }
+        private val modelScope = CoroutineScope(job + scopeExceptionHandler)
+        @SuppressLint("MissingPermission")
+        private var controlActor = modelScope.actor<ControlCommand>(capacity = Channel.UNLIMITED) {
+            for (command in channel) {
+                try {
+                    when (command) {
+                        is StartRecordingCommand -> {
+                            this@WebSocketRecognizer.startRecording()
+                            // обязательно ждем завершения
+                            lastChildJob?.join()
+                        }
+                        is StopRecordingCommand -> {
+                            this@WebSocketRecognizer.stopRecording()
+                            // обязательно ждем завершения
+                            lastChildJob?.join()
+                        }
+                        is DestroyCommand -> {
+                            this@WebSocketRecognizer.destroy()
+                        }
+                    }
+                } catch (ex: Exception) { handleError(ex) }
+            } // for
+        }
+
+        private fun handleError(ex: Throwable) {
+            GlobalScope.launch(Dispatchers.Main) {
+                if (ex !is CancellationException) {
+                    listener?.onError(ex.message.orEmpty())
+                }
+            }
+        }
+
+        fun startRecording() = GlobalScope.launch(Dispatchers.Main) {
+            if(!controlActor.isClosedForSend) {
+                controlActor.send(StartRecordingCommand)
+            }
+        }
+        fun stopRecording() = GlobalScope.launch(Dispatchers.Main) {
+            if(!controlActor.isClosedForSend) {
+                controlActor.send(StopRecordingCommand)
+            }
+        }
+        fun destroy() = GlobalScope.launch(Dispatchers.Main) {
+            if(!controlActor.isClosedForSend) {
+                controlActor.send(DestroyCommand)
+            }
+            controlActor.close()
+        }
+    }
+    val controlHelper = StartStopHelper()
+    var lastChildJob: Job? = null
 }
+sealed class ControlCommand
+object StartRecordingCommand: ControlCommand()
+object StopRecordingCommand: ControlCommand()
+object DestroyCommand: ControlCommand()

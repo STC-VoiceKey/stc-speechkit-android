@@ -16,4 +16,6 @@ interface SynthesizerListener : BaseListener {
      */
     fun onSynthesizerResult(byteArray: ByteArray)
 
+    /** Вызывается после завершения озвучки текста */
+    fun onSynthesizerComplete()
 }

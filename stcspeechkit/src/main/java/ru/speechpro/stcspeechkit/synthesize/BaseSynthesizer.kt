@@ -18,7 +18,7 @@ import ru.speechpro.stcspeechkit.util.Logger
 abstract class BaseSynthesizer {
 
     val api = SynthesizerService(STCSpeechKit.synthesizeService, STCSpeechKit.sessionClient)
-    val job = Job()
+    var job = Job()
 
     var session: String? = null
 
@@ -112,7 +112,13 @@ abstract class BaseSynthesizer {
 
         session?.let {
             GlobalScope.launch(Dispatchers.Main) {
-                closeSession(it)
+                // в случае эксепшена - краш приложения
+                try {
+                    closeSession(it)
+                } catch (ex: Exception) {
+                    Logger.print(TAG, "RestApiAntiSpoofing $ex")
+                }
+                session = null
             }
         }
         job.cancel()

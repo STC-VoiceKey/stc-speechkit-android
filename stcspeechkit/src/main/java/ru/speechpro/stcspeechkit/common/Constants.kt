@@ -10,7 +10,9 @@ import android.media.MediaRecorder
  */
 
 // URL
+// TODO нужна возможность задавать данный параметр перед использованием библиотеки
 const val SESSION_BASE_URL = "https://cp.speechpro.com/vksession/rest/"
+// TODO нужна возможность задавать данный параметр перед использованием библиотеки
 const val BASE_URL = "https://cp.speechpro.com/"
 // Audio
 const val AUDIO_SOURCE = MediaRecorder.AudioSource.VOICE_RECOGNITION

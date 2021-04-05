@@ -12,6 +12,7 @@ import ru.speechpro.stcspeechkit.domain.models.StreamSynthesizeRequest
 import ru.speechpro.stcspeechkit.domain.models.Text
 import ru.speechpro.stcspeechkit.synthesize.listeners.SynthesizerListener
 import ru.speechpro.stcspeechkit.util.Logger
+import java.lang.Exception
 
 /**
  * WebSocketSynthesizer class contains methods for synthesize stream API
@@ -72,6 +73,7 @@ class WebSocketSynthesizer private constructor(
         return Pair(transactionId, ws)
     }
 
+    /** почему метод приватный и не вызывается? */
     private suspend fun closeStream(sessionId: String, transactionId: String): String? {
         val response = api.closeStream(sessionId, transactionId)
         when {
@@ -208,7 +210,21 @@ class WebSocketSynthesizer private constructor(
         listener = null
         ws?.disconnect()
 
+        // нужно освобождать ресурсы иначе они заканчиваются, и аудио перестает воспроизводиться!
+        releaseAudio()
         super.destroy()
+    }
+
+    private fun releaseAudio() {
+        try {//
+            if (audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING) {
+                audioTrack.pause()
+                audioTrack.flush()
+            }
+            audioTrack.release()
+        } catch (ex: Exception) {
+            Logger.withCause(TAG, ex)
+        }
     }
 
     /**
