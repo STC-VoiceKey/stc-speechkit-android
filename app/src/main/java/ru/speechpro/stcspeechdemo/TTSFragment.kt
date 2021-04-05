@@ -76,6 +76,10 @@ class TTSFragment : Fragment(), SynthesizerListener {
         Toast.makeText(context, "onSynthesizerResult: $byteArray", Toast.LENGTH_SHORT).show()
     }
 
+    override fun onSynthesizerComplete() {
+        // TODO("Not yet implemented")
+    }
+
     override fun onError(message: String) {
         Toast.makeText(context, "onError: $message", Toast.LENGTH_SHORT).show()
     }

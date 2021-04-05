@@ -156,6 +156,7 @@ class RestApiSynthesizer private constructor(
     private var mediaPlayer: MediaPlayer? = null
     private fun startNewMediaPlayer(pathName: String) = MediaPlayer().run {
         try {
+            setOnCompletionListener { listener?.onSynthesizerComplete() }
             setDataSource(pathName)
             prepare()
             start()
