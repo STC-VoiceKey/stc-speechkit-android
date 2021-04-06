@@ -152,13 +152,15 @@ class WebSocketSynthesizer private constructor(
                             super.onCloseFrame(websocket, frame)
                             Logger.print(TAG, "onCloseFrame: $frame")
 
-                            var reason = frame?.closeReason
-                            if (reason == null) {
-                                reason = "Unknown error"
-                            }
+                            if (frame?.closeCode != 1000) {
+                                var reason = frame?.closeReason
+                                if (reason == null) {
+                                    reason = "Unknown error"
+                                }
 
-                            GlobalScope.launch(Dispatchers.Main) {
-                                listener?.onError(reason)
+                                GlobalScope.launch(Dispatchers.Main) {
+                                    listener?.onError(reason)
+                                }
                             }
 
                         }
