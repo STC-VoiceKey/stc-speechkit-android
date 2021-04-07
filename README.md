@@ -61,8 +61,8 @@
     restApiRecognizer = RestApiRecognizer.Builder(this)
             .build()
                       
-    webSocketRecognizer.startRecording()
-    webSocketRecognizer.stopRecording() 
+    restApiRecognizer.startRecording()
+    restApiRecognizer.stopRecording() 
            
     override fun onRecognizerTextMessage(result: String) {
        //intermediate result
