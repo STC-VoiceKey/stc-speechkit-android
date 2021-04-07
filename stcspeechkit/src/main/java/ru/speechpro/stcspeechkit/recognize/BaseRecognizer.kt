@@ -6,7 +6,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.STCSpeechKit
 import ru.speechpro.stcspeechkit.domain.models.PackageResponse
-import ru.speechpro.stcspeechkit.domain.service.RecognizerService
+import ru.speechpro.stcspeechkit.domain.service.RecognizerV2Service
 import ru.speechpro.stcspeechkit.util.Logger
 
 /**
@@ -15,7 +15,7 @@ import ru.speechpro.stcspeechkit.util.Logger
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 abstract class BaseRecognizer {
 
-    val api = RecognizerService(STCSpeechKit.recognizeService, STCSpeechKit.sessionClient)
+    val api = RecognizerV2Service(STCSpeechKit.recognizeV2Service, STCSpeechKit.sessionClient)
     var job = Job()
 
     var session: String? = null
@@ -37,20 +37,20 @@ abstract class BaseRecognizer {
     }
 
     suspend fun availablePackages(sessionId: String): List<PackageResponse>? {
-        val response = api.getAllPackages(sessionId)
+        val response = api.getAllModels(sessionId)
         when {
-            response.isSuccessful -> return response.body()!!
+            response.isSuccessful -> return response.body()?.map { e -> PackageResponse(true, e.sampleRate, e.name, e.language, e.modelId) }
         }
 
         return null
     }
 
     suspend fun loadPackage(sessionId: String, packageId: String) {
-        api.loadPackage(sessionId, packageId)
+        //not implemented in v2
     }
 
     suspend fun unloadPackage(sessionId: String, packageId: String) {
-        api.unloadPackage(sessionId, packageId)
+        //not implemented in v2
     }
 
     open fun destroy() {

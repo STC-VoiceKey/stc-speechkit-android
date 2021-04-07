@@ -13,5 +13,9 @@ data class RecognizeWordResponse(
     @JsonProperty("word")
     var word: String,
     @JsonProperty("begin")
-    var begin: String = ""
+    var begin: String = "",
+    @JsonProperty("speaker")
+    var speaker: Int?,
+    @JsonProperty("stop_sign")
+    var stopSign: String?
 )

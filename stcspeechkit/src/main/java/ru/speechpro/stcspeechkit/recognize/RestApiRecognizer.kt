@@ -5,13 +5,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.STCSpeechKit
-import ru.speechpro.stcspeechkit.common.AUDIO_ENCODING
-import ru.speechpro.stcspeechkit.common.AUDIO_SOURCE
-import ru.speechpro.stcspeechkit.common.CHANNELS
-import ru.speechpro.stcspeechkit.common.PACKAGE_ADVANCED
+import ru.speechpro.stcspeechkit.common.*
 import ru.speechpro.stcspeechkit.domain.models.Audio
 import ru.speechpro.stcspeechkit.domain.models.ErrorResponse
-import ru.speechpro.stcspeechkit.domain.models.RecognizeRequest
+import ru.speechpro.stcspeechkit.domain.models.RecognizeV2Request
 import ru.speechpro.stcspeechkit.interfaces.IAudioRecorder
 import ru.speechpro.stcspeechkit.media.AudioListener
 import ru.speechpro.stcspeechkit.media.AudioRecorder
@@ -47,7 +44,7 @@ class RestApiRecognizer private constructor(
         private var audioEncoding: Int = AUDIO_ENCODING
         private var sampleRate: Int = 8000
         private var channels: Int = CHANNELS
-        private var packageId: String = PACKAGE_ADVANCED
+        private var packageId: String = MODEL_OFFLINE
 
         fun audioSource(audioSource: Int) = apply { this.audioSource = audioSource }
         fun audioEncoding(audioEncoding: Int) = apply { this.audioEncoding = audioEncoding }
@@ -67,7 +64,7 @@ class RestApiRecognizer private constructor(
 
     private suspend fun recognize(sessionId: String, voice: ByteArray): String? {
         var recognizedText: String
-        val response = api.sendVoiceToRecognize(sessionId, RecognizeRequest(Audio(voice, "audio/wav"), packageId))
+        val response = api.sendVoiceToRecognize(sessionId, RecognizeV2Request(Audio(voice, WAV_MIME_TYPE), packageId))
         when {
             response.isSuccessful -> recognizedText = response.body()?.text!!
             else -> {
@@ -99,7 +96,6 @@ class RestApiRecognizer private constructor(
                 when {
                     session == null || !checkSession((session!!)) -> session = startSession()
                 }
-                loadPackage(session!!, packageId)
                 val result = when {
                     hasWav -> recognize(session!!, bytesArray)
                     else -> recognize(session!!, AudioConverter.rawToWave(STCSpeechKit.applicationContext, bytesArray, sampleRate))

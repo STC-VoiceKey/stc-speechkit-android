@@ -12,7 +12,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.common.*
-import ru.speechpro.stcspeechkit.domain.models.StreamRecognizeRequest
+import ru.speechpro.stcspeechkit.domain.models.StartTransactionRequest
 import ru.speechpro.stcspeechkit.interfaces.IAudioRecorder
 import ru.speechpro.stcspeechkit.media.AudioListener
 import ru.speechpro.stcspeechkit.media.AudioRecorder
@@ -51,7 +51,7 @@ class WebSocketRecognizer private constructor(
         private var audioEncoding: Int = AUDIO_ENCODING
         private var sampleRate: Int = 16000
         private var channels: Int = CHANNELS
-        private var packageId: String = PACKAGE_COMMON_PACKAGE
+        private var packageId: String = MODEL_ONLINE
 
         fun audioSource(audioSource: Int) = apply { this.audioSource = audioSource }
         fun audioEncoding(audioEncoding: Int) = apply { this.audioEncoding = audioEncoding }
@@ -69,7 +69,7 @@ class WebSocketRecognizer private constructor(
         )
     }
 
-    private suspend fun openStream(sessionId: String, request: StreamRecognizeRequest): Pair<String, String> {
+    private suspend fun openStream(sessionId: String, request: StartTransactionRequest): Pair<String, String> {
         var transactionId = ""
         var ws = ""
         val response = api.openStream(sessionId, request)
@@ -85,9 +85,9 @@ class WebSocketRecognizer private constructor(
 
     private suspend fun closeStream(sessionId: String, transactionId: String): String? {
         val response = api.closeStream(sessionId, transactionId)
-        when {
-            response.isSuccessful && response.body() != null -> return response.body()!!.text
-            else -> return null
+        return when {
+            response.isSuccessful && response.body() != null -> response.body()!!.text
+            else -> null
         }
     }
 
@@ -191,8 +191,7 @@ class WebSocketRecognizer private constructor(
                 when {
                     session == null || checkSession(session!!) -> session = startSession()
                 }
-                loadPackage(session!!, packageId)
-                val result = openStream(session!!, StreamRecognizeRequest(AUDIO_MIME_TYPE, PACKAGE_COMMON_PACKAGE))
+                val result = openStream(session!!, StartTransactionRequest(packageId))
 
                 transaction = result.first
                 val uri = result.second

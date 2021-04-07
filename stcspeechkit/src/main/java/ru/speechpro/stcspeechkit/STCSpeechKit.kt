@@ -69,11 +69,19 @@ object STCSpeechKit {
         private set
 
     /**
-     * Retrieves the recognize service.
+     * Retrieves the recognize service version v1.
      *
      * @return the recognize service if is initialized
      */
     var recognizeService: RecognizeApi
+        private set
+
+    /**
+     * Retrieves the recognize service version v2.
+     *
+     * @return the recognize service if is initialized
+     */
+    var recognizeV2Service: RecognizeV2Api
         private set
 
     /**
@@ -147,6 +155,7 @@ object STCSpeechKit {
                 .build()
 
         recognizeService = retrofit.create(RecognizeApi::class.java)
+        recognizeV2Service = retrofit.create(RecognizeV2Api::class.java)
         synthesizeService = retrofit.create(SynthesizeApi::class.java)
         diarizationService = retrofit.create(DiarizationApi::class.java)
         antiSpoofingService = retrofit.create(AntiSpoofingApi::class.java)
