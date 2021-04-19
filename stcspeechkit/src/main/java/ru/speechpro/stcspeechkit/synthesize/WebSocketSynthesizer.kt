@@ -187,6 +187,10 @@ class WebSocketSynthesizer private constructor(
                             Logger.print(TAG, """${binary.toString()} size: ${binary!!.size}""")
 
                             audioTrack.write(binary, 0, binary.size)
+
+                            GlobalScope.launch(Dispatchers.Main) {
+                                listener?.onSynthesizerResult(binary)
+                            }
                         }
                     })
                     .addExtension(WebSocketExtension.PERMESSAGE_DEFLATE)
@@ -216,7 +220,7 @@ class WebSocketSynthesizer private constructor(
     }
 
     private fun releaseAudio() {
-        try {//
+        try {
             if (audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING) {
                 audioTrack.pause()
                 audioTrack.flush()
