@@ -1,11 +1,18 @@
 package ru.speechpro.stcspeechkit.synthesize
 
+import android.annotation.SuppressLint
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import com.neovisionaries.ws.client.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.common.*
 import ru.speechpro.stcspeechkit.domain.models.StreamSynthesizeRequest
@@ -280,5 +287,61 @@ class WebSocketSynthesizer private constructor(
         fun isReady()
     }
 
-}
+    /**
+     * Костыль.
+     * Аналогично WebSocketRecognizer - избегаем конкурентного доступа к переменным класа
+     * при нескольких быстрых вызовах synthesize(text: String),
+     * или быстрого вызова destroy() после первого synthesize(text: String)
+     *
+     * Избавляюсь от данной проблемы используя для исполнения обоих методов actor-корутину.
+     *   (команды выполняются строго последовательно в порядке вызова в одной и той же корутине)
+     * */
+    inner class StartStopHelper {
+        private val scopeExceptionHandler = CoroutineExceptionHandler{ _, ex -> handleError(ex) }
+        private val modelScope = CoroutineScope(job + scopeExceptionHandler)
+        @SuppressLint("MissingPermission")
+        private var controlActor = modelScope.actor<ControlCommand>(capacity = Channel.UNLIMITED) {
+            for (command in channel) {
+                try {
+                    when (command) {
+                        is SynthesizeCommand -> {
+                            this@WebSocketSynthesizer.synthesize(command.text)
+                            // обязательно ждем завершения
+                            lastChildJob?.join()
+                        }
+                        is DestroyCommand -> {
+                            this@WebSocketSynthesizer.destroy()
+                        }
+                    }
+                } catch (ex: Exception) { handleError(ex) }
+            } // for
+        }
 
+        private fun handleError(ex: Throwable) {
+            GlobalScope.launch(Dispatchers.Main) {
+                if (ex !is CancellationException) {
+                    listener?.onError(ex.message.orEmpty())
+                }
+            }
+        }
+
+        /** Синтезировать текст */
+        fun synthesize(text: String) = GlobalScope.launch(Dispatchers.Main) {
+            if(!controlActor.isClosedForSend) {
+                controlActor.send(SynthesizeCommand(text))
+            }
+        }
+        /** Уничтожить объект и освободить ресурсы */
+        fun destroy() = GlobalScope.launch(Dispatchers.Main) {
+            if(!controlActor.isClosedForSend) {
+                controlActor.send(DestroyCommand)
+            }
+            controlActor.close()
+        }
+    }
+    val controlHelper = StartStopHelper()
+    private var lastChildJob: Job? = null
+}
+sealed class ControlCommand
+private class SynthesizeCommand(val text: String): ControlCommand()
+private object DestroyCommand: ControlCommand()
