@@ -28,6 +28,10 @@ class WebSocketSynthesizer private constructor(
 
 ) : BaseSynthesizer() {
 
+    /**
+     * Инициализация и использование ws в данный момент из разных потоков
+     * */
+    @Volatile
     private var ws: WebSocket? = null
     private var transaction: String? = null
 
@@ -212,7 +216,13 @@ class WebSocketSynthesizer private constructor(
     override fun destroy() {
         Logger.print(TAG, "destroy")
         listener = null
-        ws?.disconnect()
+
+        // опасаемся Exception - приведет к крашу приложения
+        try {
+            ws?.disconnect()
+        } catch (throwable: Throwable) {
+            Logger.withCause(TAG, throwable)
+        }
 
         // нужно освобождать ресурсы иначе они заканчиваются, и аудио перестает воспроизводиться!
         releaseAudio()
@@ -242,15 +252,26 @@ class WebSocketSynthesizer private constructor(
         when {
             ws != null && ws!!.isOpen -> {
                 Logger.print(TAG, "WebSocket is open")
-                ws!!.sendText(text)
+                sendTextSafe(text)
             }
             else -> {
                 Logger.print(TAG, "WebSocket is not open")
                 prepare(object : WebSocketState {
                     override fun isReady() {
-                        ws!!.sendText(text)
+                        sendTextSafe(text)
                     }
                 })
+            }
+        }
+    }
+
+    private fun sendTextSafe(text: String) {
+        try {
+            ws!!.sendText(text)
+        } catch (throwable: Throwable) {
+            Logger.withCause(TAG, throwable)
+            GlobalScope.launch(Dispatchers.Main) {
+                listener?.onError(throwable.message.orEmpty())
             }
         }
     }
