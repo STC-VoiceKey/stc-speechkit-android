@@ -13,13 +13,11 @@ import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 import ru.speechpro.stcspeechkit.common.BASE_URL
 import ru.speechpro.stcspeechkit.common.SESSION_BASE_URL
-import ru.speechpro.stcspeechkit.data.network.AntiSpoofingApi
-import ru.speechpro.stcspeechkit.data.network.DiarizationApi
-import ru.speechpro.stcspeechkit.data.network.RecognizeApi
-import ru.speechpro.stcspeechkit.data.network.SynthesizeApi
+import ru.speechpro.stcspeechkit.data.network.*
 import ru.speechpro.stcspeechkit.util.AppInfo.getVersionCode
 import ru.speechpro.stcspeechkit.util.AppInfo.getVersionName
 import ru.speechpro.stcspeechkit.util.Logger
+import ru.speechpro.stcspeechkit.util.ServerUrl
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlin.properties.Delegates
@@ -143,7 +141,7 @@ object STCSpeechKit {
 
         val retrofit = Retrofit.Builder()
                 .client(okHttpClient)
-                .baseUrl(BASE_URL)
+                .baseUrl(ServerUrl.getBaseUrl())
                 .addCallAdapterFactory(CoroutineCallAdapterFactory())
                 .addConverterFactory(JacksonConverterFactory.create(ObjectMapper()))
                 .build()
@@ -152,7 +150,7 @@ object STCSpeechKit {
         synthesizeService = retrofit.create(SynthesizeApi::class.java)
         diarizationService = retrofit.create(DiarizationApi::class.java)
         antiSpoofingService = retrofit.create(AntiSpoofingApi::class.java)
-        sessionClient = SessionClientFactory.get(SESSION_BASE_URL, true)
+        sessionClient = SessionClientFactory.get(ServerUrl.getSessionUrl(), true)
     }
 
     /**
