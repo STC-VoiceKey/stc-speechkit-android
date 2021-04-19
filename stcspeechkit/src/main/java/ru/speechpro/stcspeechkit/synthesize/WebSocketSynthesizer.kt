@@ -19,7 +19,7 @@ import ru.speechpro.stcspeechkit.domain.models.StreamSynthesizeRequest
 import ru.speechpro.stcspeechkit.domain.models.Text
 import ru.speechpro.stcspeechkit.synthesize.listeners.SynthesizerListener
 import ru.speechpro.stcspeechkit.util.Logger
-import java.lang.Exception
+import java.util.concurrent.CountDownLatch
 
 /**
  * WebSocketSynthesizer class contains methods for synthesize stream API
@@ -41,6 +41,8 @@ class WebSocketSynthesizer private constructor(
     @Volatile
     private var ws: WebSocket? = null
     private var transaction: String? = null
+
+    var initSignal = CountDownLatch(1)
 
     companion object {
         private val TAG = WebSocketSynthesizer::class.java.simpleName
@@ -126,6 +128,7 @@ class WebSocketSynthesizer private constructor(
                         audioTrack.play()
 
                         initWebSocket(uri, webSocketListener)
+                        initSignal.countDown()
                     }
                 }
             } catch (throwable: Throwable) {
@@ -265,6 +268,9 @@ class WebSocketSynthesizer private constructor(
                 Logger.print(TAG, "WebSocket is not open")
                 prepare(object : WebSocketState {
                     override fun isReady() {
+                        // Иногда ws не успевает доинициализироваться к данному моменту
+                        // и равен null -> NullPointerException
+                        initSignal.await()
                         sendTextSafe(text)
                     }
                 })
