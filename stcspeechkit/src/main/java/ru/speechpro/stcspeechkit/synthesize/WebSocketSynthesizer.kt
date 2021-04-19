@@ -21,10 +21,10 @@ import java.lang.Exception
  */
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 class WebSocketSynthesizer private constructor(
-        private var listener: SynthesizerListener?,
-        private val language: Language,
-        private val speaker: String,
-        private val audioTrack: AudioTrack
+    private var listener: SynthesizerListener?,
+    private val language: Language,
+    private val speaker: String,
+    private val audioTrack: AudioTrack
 
 ) : BaseSynthesizer() {
 
@@ -56,11 +56,11 @@ class WebSocketSynthesizer private constructor(
         fun bufferSizeInBytes(bufferSizeInBytes: Int) = apply { this.bufferSizeInBytes = bufferSizeInBytes }
 
         fun build() = WebSocketSynthesizer(
-                synthesizerListener,
-                language,
-                speaker,
-                AudioTrack(AudioManager.STREAM_MUSIC, sampleRateInHz, channelConfig,
-                        audioFormat, bufferSizeInBytes, AudioTrack.MODE_STREAM)
+            synthesizerListener,
+            language,
+            speaker,
+            AudioTrack(AudioManager.STREAM_MUSIC, sampleRateInHz, channelConfig,
+                audioFormat, bufferSizeInBytes, AudioTrack.MODE_STREAM)
         )
     }
 
@@ -133,72 +133,72 @@ class WebSocketSynthesizer private constructor(
     private fun initWebSocket(uri: String, webSocketListener: WebSocketState) {
         try {
             ws = WebSocketFactory()
-                    .setConnectionTimeout(WEB_SOCKET_CONNECTION)
-                    .createSocket(uri)
-                    .addListener(object : WebSocketAdapter() {
-                        override fun onConnected(websocket: WebSocket?, headers: MutableMap<String, MutableList<String>>?) {
-                            super.onConnected(websocket, headers)
-                            Logger.print(TAG, "onConnected")
-                            webSocketListener.isReady()
+                .setConnectionTimeout(WEB_SOCKET_CONNECTION)
+                .createSocket(uri)
+                .addListener(object : WebSocketAdapter() {
+                    override fun onConnected(websocket: WebSocket?, headers: MutableMap<String, MutableList<String>>?) {
+                        super.onConnected(websocket, headers)
+                        Logger.print(TAG, "onConnected")
+                        webSocketListener.isReady()
+                    }
+
+                    override fun onMessageError(websocket: WebSocket?, cause: WebSocketException?, frames: MutableList<WebSocketFrame>?) {
+                        super.onMessageError(websocket, cause, frames)
+                        cause?.let { Logger.withCause(TAG, it) }
+                    }
+
+                    override fun onDisconnected(websocket: WebSocket?, serverCloseFrame: WebSocketFrame?, clientCloseFrame: WebSocketFrame?, closedByServer: Boolean) {
+                        super.onDisconnected(websocket, serverCloseFrame, clientCloseFrame, closedByServer)
+                        Logger.print(TAG, "onDisconnected")
+                    }
+
+                    override fun onCloseFrame(websocket: WebSocket?, frame: WebSocketFrame?) {
+                        super.onCloseFrame(websocket, frame)
+                        Logger.print(TAG, "onCloseFrame: $frame")
+
+                        var reason = frame?.closeReason
+                        if (reason == null) {
+                            reason = "Unknown error"
                         }
 
-                        override fun onMessageError(websocket: WebSocket?, cause: WebSocketException?, frames: MutableList<WebSocketFrame>?) {
-                            super.onMessageError(websocket, cause, frames)
-                            cause?.let { Logger.withCause(TAG, it) }
+                        GlobalScope.launch(Dispatchers.Main) {
+                            listener?.onError(reason)
                         }
 
-                        override fun onDisconnected(websocket: WebSocket?, serverCloseFrame: WebSocketFrame?, clientCloseFrame: WebSocketFrame?, closedByServer: Boolean) {
-                            super.onDisconnected(websocket, serverCloseFrame, clientCloseFrame, closedByServer)
-                            Logger.print(TAG, "onDisconnected")
-                        }
+                    }
 
-                        override fun onCloseFrame(websocket: WebSocket?, frame: WebSocketFrame?) {
-                            super.onCloseFrame(websocket, frame)
-                            Logger.print(TAG, "onCloseFrame: $frame")
-
-                            var reason = frame?.closeReason
-                            if (reason == null) {
-                                reason = "Unknown error"
-                            }
-
-                            GlobalScope.launch(Dispatchers.Main) {
-                                listener?.onError(reason)
-                            }
-
-                        }
-
-                        override fun onConnectError(websocket: WebSocket?, exception: WebSocketException?) {
-                            super.onConnectError(websocket, exception)
-                            Logger.print(TAG, "onConnectError")
-                            when {
-                                exception != null -> {
-                                    Logger.withCause(TAG, exception)
-                                    GlobalScope.launch(Dispatchers.Main) {
-                                        listener?.onError(exception.localizedMessage)
-                                    }
-
+                    override fun onConnectError(websocket: WebSocket?, exception: WebSocketException?) {
+                        super.onConnectError(websocket, exception)
+                        Logger.print(TAG, "onConnectError")
+                        when {
+                            exception != null -> {
+                                Logger.withCause(TAG, exception)
+                                GlobalScope.launch(Dispatchers.Main) {
+                                    listener?.onError(exception.localizedMessage)
                                 }
+
                             }
                         }
+                    }
 
-                        override fun onTextMessage(websocket: WebSocket?, text: String?) {
-                            super.onTextMessage(websocket, text)
-                            Logger.print(TAG, "onTextMessage: $text")
+                    override fun onTextMessage(websocket: WebSocket?, text: String?) {
+                        super.onTextMessage(websocket, text)
+                        Logger.print(TAG, "onTextMessage: $text")
+                    }
+
+                    override fun onBinaryMessage(websocket: WebSocket?, binary: ByteArray?) {
+                        super.onBinaryMessage(websocket, binary)
+                        Logger.print(TAG, """${binary.toString()} size: ${binary!!.size}""")
+
+                        audioTrack.write(binary, 0, binary.size)
+
+                        GlobalScope.launch(Dispatchers.Main) {
+                            listener?.onSynthesizerResult(binary)
                         }
-
-                        override fun onBinaryMessage(websocket: WebSocket?, binary: ByteArray?) {
-                            super.onBinaryMessage(websocket, binary)
-                            Logger.print(TAG, """${binary.toString()} size: ${binary!!.size}""")
-
-                            audioTrack.write(binary, 0, binary.size)
-
-                            GlobalScope.launch(Dispatchers.Main) {
-                                listener?.onSynthesizerResult(binary)
-                            }
-                        }
-                    })
-                    .addExtension(WebSocketExtension.PERMESSAGE_DEFLATE)
-                    .connect()
+                    }
+                })
+                .addExtension(WebSocketExtension.PERMESSAGE_DEFLATE)
+                .connect()
 
         } catch (ex: WebSocketException) {
             Logger.withCause(TAG, ex)
