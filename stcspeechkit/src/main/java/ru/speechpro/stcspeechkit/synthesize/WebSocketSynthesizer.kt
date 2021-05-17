@@ -1,18 +1,25 @@
 package ru.speechpro.stcspeechkit.synthesize
 
+import android.annotation.SuppressLint
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import com.neovisionaries.ws.client.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.launch
 import ru.speechpro.stcspeechkit.common.*
 import ru.speechpro.stcspeechkit.domain.models.StreamSynthesizeRequest
 import ru.speechpro.stcspeechkit.domain.models.Text
 import ru.speechpro.stcspeechkit.synthesize.listeners.SynthesizerListener
 import ru.speechpro.stcspeechkit.util.Logger
-import java.lang.Exception
+import java.util.concurrent.CountDownLatch
 
 /**
  * WebSocketSynthesizer class contains methods for synthesize stream API
@@ -21,15 +28,21 @@ import java.lang.Exception
  */
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 class WebSocketSynthesizer private constructor(
-        private var listener: SynthesizerListener?,
-        private val language: Language,
-        private val speaker: String,
-        private val audioTrack: AudioTrack
+    private var listener: SynthesizerListener?,
+    private val language: Language,
+    private val speaker: String,
+    private val audioTrack: AudioTrack
 
 ) : BaseSynthesizer() {
 
+    /**
+     * Инициализация и использование ws в данный момент из разных потоков
+     * */
+    @Volatile
     private var ws: WebSocket? = null
     private var transaction: String? = null
+
+    var initSignal = CountDownLatch(1)
 
     companion object {
         private val TAG = WebSocketSynthesizer::class.java.simpleName
@@ -52,11 +65,11 @@ class WebSocketSynthesizer private constructor(
         fun bufferSizeInBytes(bufferSizeInBytes: Int) = apply { this.bufferSizeInBytes = bufferSizeInBytes }
 
         fun build() = WebSocketSynthesizer(
-                synthesizerListener,
-                language,
-                speaker,
-                AudioTrack(AudioManager.STREAM_MUSIC, sampleRateInHz, channelConfig,
-                        audioFormat, bufferSizeInBytes, AudioTrack.MODE_STREAM)
+            synthesizerListener,
+            language,
+            speaker,
+            AudioTrack(AudioManager.STREAM_MUSIC, sampleRateInHz, channelConfig,
+                audioFormat, bufferSizeInBytes, AudioTrack.MODE_STREAM)
         )
     }
 
@@ -115,6 +128,7 @@ class WebSocketSynthesizer private constructor(
                         audioTrack.play()
 
                         initWebSocket(uri, webSocketListener)
+                        initSignal.countDown()
                     }
                 }
             } catch (throwable: Throwable) {
@@ -129,28 +143,28 @@ class WebSocketSynthesizer private constructor(
     private fun initWebSocket(uri: String, webSocketListener: WebSocketState) {
         try {
             ws = WebSocketFactory()
-                    .setConnectionTimeout(WEB_SOCKET_CONNECTION)
-                    .createSocket(uri)
-                    .addListener(object : WebSocketAdapter() {
-                        override fun onConnected(websocket: WebSocket?, headers: MutableMap<String, MutableList<String>>?) {
-                            super.onConnected(websocket, headers)
-                            Logger.print(TAG, "onConnected")
-                            webSocketListener.isReady()
-                        }
+                .setConnectionTimeout(WEB_SOCKET_CONNECTION)
+                .createSocket(uri)
+                .addListener(object : WebSocketAdapter() {
+                    override fun onConnected(websocket: WebSocket?, headers: MutableMap<String, MutableList<String>>?) {
+                        super.onConnected(websocket, headers)
+                        Logger.print(TAG, "onConnected")
+                        webSocketListener.isReady()
+                    }
 
-                        override fun onMessageError(websocket: WebSocket?, cause: WebSocketException?, frames: MutableList<WebSocketFrame>?) {
-                            super.onMessageError(websocket, cause, frames)
-                            cause?.let { Logger.withCause(TAG, it) }
-                        }
+                    override fun onMessageError(websocket: WebSocket?, cause: WebSocketException?, frames: MutableList<WebSocketFrame>?) {
+                        super.onMessageError(websocket, cause, frames)
+                        cause?.let { Logger.withCause(TAG, it) }
+                    }
 
-                        override fun onDisconnected(websocket: WebSocket?, serverCloseFrame: WebSocketFrame?, clientCloseFrame: WebSocketFrame?, closedByServer: Boolean) {
-                            super.onDisconnected(websocket, serverCloseFrame, clientCloseFrame, closedByServer)
-                            Logger.print(TAG, "onDisconnected")
-                        }
+                    override fun onDisconnected(websocket: WebSocket?, serverCloseFrame: WebSocketFrame?, clientCloseFrame: WebSocketFrame?, closedByServer: Boolean) {
+                        super.onDisconnected(websocket, serverCloseFrame, clientCloseFrame, closedByServer)
+                        Logger.print(TAG, "onDisconnected")
+                    }
 
-                        override fun onCloseFrame(websocket: WebSocket?, frame: WebSocketFrame?) {
-                            super.onCloseFrame(websocket, frame)
-                            Logger.print(TAG, "onCloseFrame: $frame")
+                    override fun onCloseFrame(websocket: WebSocket?, frame: WebSocketFrame?) {
+                        super.onCloseFrame(websocket, frame)
+                        Logger.print(TAG, "onCloseFrame: $frame")
 
                             if (frame?.closeCode != 1000) {
                                 var reason = frame?.closeReason
@@ -163,36 +177,40 @@ class WebSocketSynthesizer private constructor(
                                 }
                             }
 
-                        }
+                    }
 
-                        override fun onConnectError(websocket: WebSocket?, exception: WebSocketException?) {
-                            super.onConnectError(websocket, exception)
-                            Logger.print(TAG, "onConnectError")
-                            when {
-                                exception != null -> {
-                                    Logger.withCause(TAG, exception)
-                                    GlobalScope.launch(Dispatchers.Main) {
-                                        listener?.onError(exception.localizedMessage)
-                                    }
-
+                    override fun onConnectError(websocket: WebSocket?, exception: WebSocketException?) {
+                        super.onConnectError(websocket, exception)
+                        Logger.print(TAG, "onConnectError")
+                        when {
+                            exception != null -> {
+                                Logger.withCause(TAG, exception)
+                                GlobalScope.launch(Dispatchers.Main) {
+                                    listener?.onError(exception.localizedMessage)
                                 }
+
                             }
                         }
+                    }
 
-                        override fun onTextMessage(websocket: WebSocket?, text: String?) {
-                            super.onTextMessage(websocket, text)
-                            Logger.print(TAG, "onTextMessage: $text")
+                    override fun onTextMessage(websocket: WebSocket?, text: String?) {
+                        super.onTextMessage(websocket, text)
+                        Logger.print(TAG, "onTextMessage: $text")
+                    }
+
+                    override fun onBinaryMessage(websocket: WebSocket?, binary: ByteArray?) {
+                        super.onBinaryMessage(websocket, binary)
+                        Logger.print(TAG, """${binary.toString()} size: ${binary!!.size}""")
+
+                        audioTrack.write(binary, 0, binary.size)
+
+                        GlobalScope.launch(Dispatchers.Main) {
+                            listener?.onSynthesizerResult(binary)
                         }
-
-                        override fun onBinaryMessage(websocket: WebSocket?, binary: ByteArray?) {
-                            super.onBinaryMessage(websocket, binary)
-                            Logger.print(TAG, """${binary.toString()} size: ${binary!!.size}""")
-
-                            audioTrack.write(binary, 0, binary.size)
-                        }
-                    })
-                    .addExtension(WebSocketExtension.PERMESSAGE_DEFLATE)
-                    .connect()
+                    }
+                })
+                .addExtension(WebSocketExtension.PERMESSAGE_DEFLATE)
+                .connect()
 
         } catch (ex: WebSocketException) {
             Logger.withCause(TAG, ex)
@@ -210,7 +228,13 @@ class WebSocketSynthesizer private constructor(
     override fun destroy() {
         Logger.print(TAG, "destroy")
         listener = null
-        ws?.disconnect()
+
+        // опасаемся Exception - приведет к крашу приложения
+        try {
+            ws?.disconnect()
+        } catch (throwable: Throwable) {
+            Logger.withCause(TAG, throwable)
+        }
 
         // нужно освобождать ресурсы иначе они заканчиваются, и аудио перестает воспроизводиться!
         releaseAudio()
@@ -218,7 +242,7 @@ class WebSocketSynthesizer private constructor(
     }
 
     private fun releaseAudio() {
-        try {//
+        try {
             if (audioTrack.playState == AudioTrack.PLAYSTATE_PLAYING) {
                 audioTrack.pause()
                 audioTrack.flush()
@@ -240,15 +264,29 @@ class WebSocketSynthesizer private constructor(
         when {
             ws != null && ws!!.isOpen -> {
                 Logger.print(TAG, "WebSocket is open")
-                ws!!.sendText(text)
+                sendTextSafe(text)
             }
             else -> {
                 Logger.print(TAG, "WebSocket is not open")
                 prepare(object : WebSocketState {
                     override fun isReady() {
-                        ws!!.sendText(text)
+                        // Иногда ws не успевает доинициализироваться к данному моменту
+                        // и равен null -> NullPointerException
+                        initSignal.await()
+                        sendTextSafe(text)
                     }
                 })
+            }
+        }
+    }
+
+    private fun sendTextSafe(text: String) {
+        try {
+            ws!!.sendText(text)
+        } catch (throwable: Throwable) {
+            Logger.withCause(TAG, throwable)
+            GlobalScope.launch(Dispatchers.Main) {
+                listener?.onError(throwable.message.orEmpty())
             }
         }
     }
@@ -257,5 +295,61 @@ class WebSocketSynthesizer private constructor(
         fun isReady()
     }
 
-}
+    /**
+     * Костыль.
+     * Аналогично WebSocketRecognizer - избегаем конкурентного доступа к переменным класа
+     * при нескольких быстрых вызовах synthesize(text: String),
+     * или быстрого вызова destroy() после первого synthesize(text: String)
+     *
+     * Избавляюсь от данной проблемы используя для исполнения обоих методов actor-корутину.
+     *   (команды выполняются строго последовательно в порядке вызова в одной и той же корутине)
+     * */
+    inner class StartStopHelper {
+        private val scopeExceptionHandler = CoroutineExceptionHandler{ _, ex -> handleError(ex) }
+        private val modelScope = CoroutineScope(job + scopeExceptionHandler)
+        @SuppressLint("MissingPermission")
+        private var controlActor = modelScope.actor<ControlCommand>(capacity = Channel.UNLIMITED) {
+            for (command in channel) {
+                try {
+                    when (command) {
+                        is SynthesizeCommand -> {
+                            this@WebSocketSynthesizer.synthesize(command.text)
+                            // обязательно ждем завершения
+                            lastChildJob?.join()
+                        }
+                        is DestroyCommand -> {
+                            this@WebSocketSynthesizer.destroy()
+                        }
+                    }
+                } catch (ex: Exception) { handleError(ex) }
+            } // for
+        }
 
+        private fun handleError(ex: Throwable) {
+            GlobalScope.launch(Dispatchers.Main) {
+                if (ex !is CancellationException) {
+                    listener?.onError(ex.message.orEmpty())
+                }
+            }
+        }
+
+        /** Синтезировать текст */
+        fun synthesize(text: String) = GlobalScope.launch(Dispatchers.Main) {
+            if(!controlActor.isClosedForSend) {
+                controlActor.send(SynthesizeCommand(text))
+            }
+        }
+        /** Уничтожить объект и освободить ресурсы */
+        fun destroy() = GlobalScope.launch(Dispatchers.Main) {
+            if(!controlActor.isClosedForSend) {
+                controlActor.send(DestroyCommand)
+            }
+            controlActor.close()
+        }
+    }
+    val controlHelper = StartStopHelper()
+    private var lastChildJob: Job? = null
+}
+sealed class ControlCommand
+private class SynthesizeCommand(val text: String): ControlCommand()
+private object DestroyCommand: ControlCommand()
