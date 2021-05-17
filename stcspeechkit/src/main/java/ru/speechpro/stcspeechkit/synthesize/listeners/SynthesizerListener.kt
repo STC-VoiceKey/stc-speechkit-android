@@ -10,7 +10,9 @@ import ru.speechpro.stcspeechkit.interfaces.BaseListener
 interface SynthesizerListener : BaseListener {
 
     /**
-     * Called when a synthesis result.(Only for REST API)
+     * Called when a synthesis result.
+     *
+     * (Final result for REST API, or partial when WebSocket using)
      *
      * @param byteArray voice WAV
      */
